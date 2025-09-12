@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "locale": "en_US.UTF-8",
+  "metadata": {
+    "appmode": "python-streamlit",
+    "entrypoint": "chromatogram_plotter"
+  },
+  "python": {
+    "version": "3.8.6",
+    "package_manager": {
+      "name": "pip",
+      "version": "24.3.1",
+      "package_file": "requirements.txt"
+    }
+  },
+  "files": {
+    "requirements.txt": {
+      "checksum": "42871aebde07b085ba7b846949c0eed7"
+    },
+    "chromatogram_plotter.py": {
+      "checksum": "74a2ed2a68f06a2ec65cf7efdbd7b79c"
+    }
+  }
+}
