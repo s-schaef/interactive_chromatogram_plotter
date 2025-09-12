@@ -14,7 +14,7 @@ Access the application directly through Streamlit Cloud - no installation requir
 - **Data Export**: Download processed data as CSV or save plots as PNG images
 - **Large File Support**: Handles files up to 200MB
 
-## 📁 File Format Requirements
+## File Format Requirements
 
 ### Input File Structure
 - **Format**: Tab-separated values (`.txt` extension)
