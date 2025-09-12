@@ -3,17 +3,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import io
 import base64
- 
+
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
- 
+
 # Main title
 st.title("Chromatogram Plotter")
- 
+
+# Initialize session state
+if 'plot_configs' not in st.session_state:
+    st.session_state.plot_configs = []
+
 #### data functions
 def process_file(uploaded_file):
     if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
-        return None, "File size exceeds 200MB limit."
+        return None, None, "File size exceeds 200MB limit."
    
     try:
         # Read the first few lines to extract the default name
@@ -33,94 +37,173 @@ def process_file(uploaded_file):
             sixth_line_parts = lines[5].strip().split('\t')
             if len(sixth_line_parts) >= 2 and sixth_line_parts[0].strip() == "Injection":
                 default_name = sixth_line_parts[1].strip()
- 
+
         # Read the file into a DataFrame    
-        df = pd.read_csv(uploaded_file, sep='\t', header=42) #TODO: check for off by one in function documentation
+        df = pd.read_csv(uploaded_file, sep='\t', header=42)
         if len(df.columns) != 3:
-            return None, default_name, "File should have exactly 3 columns."
+            return None, None, "File should have exactly 3 columns."
        
         return df.iloc[:, [0, 2]], default_name, None  # Return 1st and 3rd columns
     except Exception as e:
-        return None, f"Error processing file: {str(e)}"
- 
+        return None, None, f"Error processing file: {str(e)}"
+
 # File upload section
 uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt'])
- 
+
 # Process uploaded files
 data_dict = {}
 x_data = None
 default_names = {}
- 
-for file in uploaded_files:
-    df, default_name, error = process_file(file)
-    if error:
-        st.error(f"Error in file {file.name}: {error}")
-    else:
-        if x_data is None:
-            x_data = df.iloc[:, 0]
-        data_dict[file.name] = df.iloc[:, 1]
-        default_names[file.name] = default_name or file.name
- 
+
+if uploaded_files:
+    for file in uploaded_files:
+        df, default_name, error = process_file(file)
+        if error:
+            st.error(f"Error in file {file.name}: {error}")
+        else:
+            if x_data is None:
+                x_data = df.iloc[:, 0]
+            data_dict[file.name] = df.iloc[:, 1]
+            default_names[file.name] = default_name or file.name
+
 # Custom names input
 custom_names = {}
-for filename in data_dict.keys():
-    custom_names[filename] = st.text_input(
-        f"Custom name for {filename}",
-        value=default_names[filename]
-    )
- 
+if data_dict:
+    st.header("Custom Sample Names")
+    for filename in data_dict.keys():
+        custom_names[filename] = st.text_input(
+            f"Custom name for {filename}",
+            value=default_names[filename],
+            key=f"name_{filename}"
+        )
+
 ### plotting function
 def generate_plots(data_dict, custom_names, x_data, plot_configs):
-    fig, axs = plt.subplots(len(plot_configs), 1, figsize=(10, 5*len(plot_configs)), squeeze=False)
+    # Filter out empty plot configs
+    valid_configs = [config for config in plot_configs if config.get('files')]
+    
+    if not valid_configs:
+        return None
+    
+    fig, axs = plt.subplots(len(valid_configs), 1, figsize=(10, 5*len(valid_configs)), squeeze=False)
    
-    for i, config in enumerate(plot_configs):
+    for i, config in enumerate(valid_configs):
         ax = axs[i, 0]
         for filename in config['files']:
-            ax.plot(x_data, data_dict[filename], label=custom_names[filename])
+            if filename in data_dict:  # Check if file exists
+                ax.plot(x_data, data_dict[filename], label=custom_names.get(filename, filename))
         ax.set_title(f"Plot {i+1}")
-        ax.set_xlabel("X-axis")
-        ax.set_ylabel("Y-axis")
+        ax.set_xlabel("Time/Wavelength")
+        ax.set_ylabel("Intensity/Absorbance")
         ax.legend()
+        ax.grid(True, alpha=0.3)
    
     plt.tight_layout()
     return fig
- 
+
 # Plot configuration
-st.header("Plot Configuration")
-plot_configs = []
-add_plot = st.button("Add Plot")
- 
-if add_plot:
-    plot_configs.append({'files': []})
- 
-for i, config in enumerate(plot_configs):
-    st.subheader(f"Plot {i+1}")
-    config['files'] = st.multiselect(f"Select files for Plot {i+1}", options=list(data_dict.keys()), key=f"plot_{i}")
- 
-# Generate plot
-if plot_configs:
-    fig = generate_plots(data_dict, custom_names, x_data, plot_configs)
-    st.pyplot(fig)
- 
-    # Download options
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png")
-    btn = st.download_button(
-        label="Download Plot",
-        data=buf.getvalue(),
-        file_name="plot.png",
-        mime="image/png"
-    )
- 
-### export functions
-def get_csv_download_link(data_dict, custom_names, x_data):
-    output = io.StringIO()
-    df = pd.DataFrame(data_dict)
-    df.columns = [custom_names[col] for col in df.columns]
-    df.insert(0, "X", x_data)
-    df.to_csv(output, index=False)
-    b64 = base64.b64encode(output.getvalue().encode()).decode()
-    return f'<a href="data:file/csv;base64,{b64}" download="processed_data.csv">Download Processed Data</a>'
- 
 if data_dict:
-    st.markdown(get_csv_download_link(data_dict, custom_names, x_data), unsafe_allow_html=True)
+    st.header("Plot Configuration")
+    
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        if st.button("Add Plot"):
+            st.session_state.plot_configs.append({'files': []})
+        
+        if st.session_state.plot_configs and st.button("Clear All Plots"):
+            st.session_state.plot_configs = []
+            st.rerun()
+    
+    # Configure each plot
+    for i, config in enumerate(st.session_state.plot_configs):
+        with st.expander(f"Plot {i+1} Configuration", expanded=True):
+            col1, col2 = st.columns([5, 1])
+            with col1:
+                config['files'] = st.multiselect(
+                    f"Select files for Plot {i+1}", 
+                    options=list(data_dict.keys()),
+                    default=config.get('files', []),
+                    format_func=lambda x: custom_names.get(x, x),
+                    key=f"plot_{i}"
+                )
+            with col2:
+                if st.button(f"Remove", key=f"remove_{i}"):
+                    st.session_state.plot_configs.pop(i)
+                    st.rerun()
+
+    # Generate and display plots
+    if st.session_state.plot_configs and any(config.get('files') for config in st.session_state.plot_configs):
+        st.header("Generated Plots")
+        fig = generate_plots(data_dict, custom_names, x_data, st.session_state.plot_configs)
+        
+        if fig:
+            st.pyplot(fig)
+            
+            # Download options
+            col1, col2 = st.columns(2)
+            with col1:
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
+                buf.seek(0)
+                st.download_button(
+                    label="Download Plot (PNG)",
+                    data=buf.getvalue(),
+                    file_name="chromatogram_plot.png",
+                    mime="image/png"
+                )
+            
+            with col2:
+                buf_pdf = io.BytesIO()
+                fig.savefig(buf_pdf, format="pdf", bbox_inches='tight')
+                buf_pdf.seek(0)
+                st.download_button(
+                    label="Download Plot (PDF)",
+                    data=buf_pdf.getvalue(),
+                    file_name="chromatogram_plot.pdf",
+                    mime="application/pdf"
+                )
+
+### export functions
+def get_csv_download_data(data_dict, custom_names, x_data):
+    output = io.BytesIO()
+    df = pd.DataFrame(data_dict)
+    df.columns = [custom_names.get(col, col) for col in df.columns]
+    df.insert(0, "X_Axis", x_data)
+    df.to_csv(output, index=False)
+    output.seek(0)
+    return output.getvalue()
+
+# Data export section
+if data_dict:
+    st.header("Export Data")
+    csv_data = get_csv_download_data(data_dict, custom_names, x_data)
+    st.download_button(
+        label="Download Processed Data (CSV)",
+        data=csv_data,
+        file_name="processed_chromatogram_data.csv",
+        mime="text/csv"
+    )
+else:
+    st.info("Please upload chromatogram files to begin processing.")
+
+# Add sidebar with instructions
+with st.sidebar:
+    st.header("📖 Instructions")
+    st.markdown("""
+    1. **Upload Files**: Select one or more .txt chromatogram files
+    2. **Customize Names**: Edit sample names if needed
+    3. **Create Plots**: Click 'Add Plot' and select files to display
+    4. **Export**: Download plots or processed data
+    
+    **File Requirements:**
+    - Tab-separated .txt files
+    - 3 columns (X, unused, Y)
+    - Data starts at row 43
+    """)
+    
+    st.header("About")
+    st.markdown("""
+    Chromatogram Plotter v1.0
+    Developed by Stefan Schaefer 
+    2025   
+    """)
