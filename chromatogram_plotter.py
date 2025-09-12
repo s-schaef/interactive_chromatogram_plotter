@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import math
 import io
 import base64
 
@@ -85,19 +86,30 @@ def generate_plots(data_dict, custom_names, x_data, plot_configs):
     if not valid_configs:
         return None
     
-    fig, axs = plt.subplots(len(valid_configs), 1, figsize=(10, 5*len(valid_configs)), squeeze=False)
-   
+    if len(valid_configs) in [1, 2, 3]:
+        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False, sharey=True, sharex=True)
+    elif len(valid_configs) == 4:
+        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False, sharey=True, sharex=True)
+    elif len(valid_configs) > 4:
+        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=True, sharey=True, sharex=True) # squeeze necessary? 
+    axs = axs.flat  # Flatten in case of multiple rows
     for i, config in enumerate(valid_configs):
-        ax = axs[i, 0]
+        ax = axs[i]#, 0]
         for filename in config['files']:
             if filename in data_dict:  # Check if file exists
                 ax.plot(x_data, data_dict[filename], label=custom_names.get(filename, filename))
-        ax.set_title(f"Plot {i+1}")
-        ax.set_xlabel("Time/Wavelength")
-        ax.set_ylabel("Intensity/Absorbance")
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-   
+        ax.set_title(config['title'])
+        # ax.set_xlabel("Time (min)")
+        # ax.set_ylabel("Intensity (mAU)")
+        if not external_label: #not st.session_state['external_label']:
+            ax.legend(loc="upper left", fontsize='small')
+        #ax.grid(True, alpha=0.3) # uncomment to add grid back in
+    fig.suptitle("Formulation", fontsize=16)
+    fig.supxlabel("Time (min)")
+    fig.supylabel("Intensity (mAU)")
+    if external_label: 
+        box = ax.get_position()
+        fig.legend(bbox_to_anchor=(box.x0+box.width+0.1, 0.5), loc='center left')
     plt.tight_layout()
     return fig
 
@@ -117,8 +129,11 @@ if data_dict:
     # Configure each plot
     for i, config in enumerate(st.session_state.plot_configs):
         with st.expander(f"Plot {i+1} Configuration", expanded=True):
-            col1, col2 = st.columns([5, 1])
+            col1, col2, col3 = st.columns([2, 5, 1])
             with col1:
+                config['title'] = st.text_input(f"Rename Plot {i+1}", value=f"Plot {i+1}", key=f"title_{i}")
+
+            with col2:
                 config['files'] = st.multiselect(
                     f"Select files for Plot {i+1}", 
                     options=list(data_dict.keys()),
@@ -126,7 +141,7 @@ if data_dict:
                     format_func=lambda x: custom_names.get(x, x),
                     key=f"plot_{i}"
                 )
-            with col2:
+            with col3:
                 if st.button(f"Remove", key=f"remove_{i}"):
                     st.session_state.plot_configs.pop(i)
                     st.rerun()
@@ -134,6 +149,9 @@ if data_dict:
     # Generate and display plots
     if st.session_state.plot_configs and any(config.get('files') for config in st.session_state.plot_configs):
         st.header("Generated Plots")
+        st.session_state['external_label'] = False # Initialize external label state
+        external_label = st.toggle("External Legend")
+
         fig = generate_plots(data_dict, custom_names, x_data, st.session_state.plot_configs)
         
         if fig:
@@ -168,7 +186,7 @@ def get_csv_download_data(data_dict, custom_names, x_data):
     output = io.BytesIO()
     df = pd.DataFrame(data_dict)
     df.columns = [custom_names.get(col, col) for col in df.columns]
-    df.insert(0, "X_Axis", x_data)
+    df.insert(0, "Time (min)", x_data)
     df.to_csv(output, index=False)
     output.seek(0)
     return output.getvalue()
@@ -188,7 +206,7 @@ else:
 
 # Add sidebar with instructions
 with st.sidebar:
-    st.header("📖 Instructions")
+    st.header("Instructions")
     st.markdown("""
     1. **Upload Files**: Select one or more .txt chromatogram files
     2. **Customize Names**: Edit sample names if needed
