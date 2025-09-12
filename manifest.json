@@ -15,10 +15,31 @@
   },
   "files": {
     "requirements.txt": {
-      "checksum": "42871aebde07b085ba7b846949c0eed7"
+      "checksum": "d4d8b5963e4801be615cdfc4506f62ff"
+    },
+    ".vscode/launch.json": {
+      "checksum": "16e31d0ff74b04754b0f6a481e04fe09"
+    },
+    "README.md": {
+      "checksum": "1c7686f8d6eed0fc0207b05b9b75e139"
     },
     "chromatogram_plotter.py": {
-      "checksum": "74a2ed2a68f06a2ec65cf7efdbd7b79c"
+      "checksum": "219b297a42405861c51429a603a0b176"
+    },
+    "processed_chromatogram_data.csv": {
+      "checksum": "c6048859f3cd5f2eb48a99ef7badebae"
+    },
+    "test_file copy 2.txt": {
+      "checksum": "f1aaef0d734d6f17380bc01f29407674"
+    },
+    "test_file copy.txt": {
+      "checksum": "2a535226ba3bed4db211fca021b44f1f"
+    },
+    "test_file.txt": {
+      "checksum": "c301065493621d58f528f84321a5cecd"
+    },
+    "test_filecorrupt.txt": {
+      "checksum": "29085d6117509241c172c451df166850"
     }
   }
 }

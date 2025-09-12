@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import math
 import io
-import base64
 
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
@@ -215,7 +214,7 @@ with st.sidebar:
     
     **File Requirements:**
     - Tab-separated .txt files
-    - 3 columns (X, unused, Y)
+    - 3 columns (unused second column)
     - Data starts at row 43
     """)
     
