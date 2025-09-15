@@ -1,8 +1,10 @@
-import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import math
 import io
+import math
+import pandas as pd
+import streamlit as st
+from itertools import cycle
+import matplotlib.pyplot as plt
+
 
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
@@ -78,40 +80,58 @@ if data_dict:
         )
 
 ### plotting function
-def generate_plots(data_dict, custom_names, x_data_dict, plot_configs):
+def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None):
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
     
     if not valid_configs:
         return None
     
+    # Handle subplot layout
     if len(valid_configs) in [1, 2, 3]:
         fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False, sharey=True, sharex=True)
     elif len(valid_configs) == 4:
         fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False, sharey=True, sharex=True)
-    elif len(valid_configs) > 4:
-        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=True, sharey=True, sharex=True) # squeeze necessary? 
-    axs = axs.flat  # Flatten in case of multiple rows
+    else:
+        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=True, sharey=True, sharex=True)
+    axs = axs.flat
+    
+    #color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    
     for i, config in enumerate(valid_configs):
-        ax = axs[i]#, 0]
-        for filename in config['files']:
-            if filename in data_dict:  # Check if file exists
-                ax.plot(x_data_dict[filename], data_dict[filename], label=custom_names.get(filename, filename))
-        ax.set_title(config['title'])
-        # ax.set_xlabel("Time (min)")
-        # ax.set_ylabel("Intensity (mAU)")
-        if not external_label: #not st.session_state['external_label']:
+        ax = axs[i]
+        
+        if external_label and custom_legend:
+            #color_iter = cycle(color_cycle)
+            
+            for filename in config['files']:
+                # if j >= len(labels):
+                #     break  # only plot as many lines as labels
+                if filename in data_dict:
+                    ax.plot(x_data_dict[filename], data_dict[filename])#, color=next(color_iter))
+        else:
+            for filename in config['files']:
+                if filename in data_dict:
+                    ax.plot(
+                        x_data_dict[filename], 
+                        data_dict[filename], 
+                        label=custom_names.get(filename, filename)
+                    )
             ax.legend(loc="upper left", fontsize='small')
-        #ax.grid(True, alpha=0.3) # uncomment to add grid back in
+        ax.set_title(config['title'])
+    
     fig.suptitle("Formulation", fontsize=16)
     fig.supxlabel("Time (min)")
     fig.supylabel("Intensity (mAU)")
-    if external_label: 
-        box = ax.get_position()
-        fig.legend(bbox_to_anchor=(box.x0+box.width+0.1, 0.5), loc='center left')
+    
+    if external_label and custom_legend:
+        labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
+        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+    elif external_label and not custom_legend:
+        fig.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
     plt.tight_layout()
     return fig
-
 # Plot configuration
 if data_dict:
     st.header("Plot Configuration")
@@ -128,9 +148,9 @@ if data_dict:
     # Configure each plot
     for i, config in enumerate(st.session_state.plot_configs):
         with st.expander(f"Plot {i+1} Configuration", expanded=True):
-            col1, col2, col3 = st.columns([2, 5, 1])
+            col1, col2, col3 = st.columns([1, 5, 1])
             with col1:
-                config['title'] = st.text_input(f"Rename Plot {i+1}", value=f"Plot {i+1}", key=f"title_{i}")
+                config['title'] = st.text_input(f"Rename Plot {i+1}", value=f"F{i+1}", key=f"title_{i}")
 
             with col2:
                 config['files'] = st.multiselect(
@@ -145,13 +165,20 @@ if data_dict:
                     st.session_state.plot_configs.pop(i)
                     st.rerun()
 
-    # Generate and display plots
+ # Generate and display plots
     if st.session_state.plot_configs and any(config.get('files') for config in st.session_state.plot_configs):
         st.header("Generated Plots")
-        st.session_state['external_label'] = False # Initialize external label state
         external_label = st.toggle("External Legend")
+        custom_legend = None
+        if external_label:
+            custom_legend = st.text_area("Custom Legend Text (one entry per line)", height=100)
 
-        fig = generate_plots(data_dict, custom_names, x_data_dict, st.session_state.plot_configs)
+        fig = generate_plots(
+            data_dict, custom_names, x_data_dict, 
+            st.session_state.plot_configs, 
+            external_label=external_label, 
+            custom_legend=custom_legend
+        )
         
         if fig:
             st.pyplot(fig)
