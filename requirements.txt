@@ -89,7 +89,6 @@ tzdata
 tzlocal
 unicodedata2
 urllib3
-watchdog
 wcwidth
 widgetsnbextension
 zipp
