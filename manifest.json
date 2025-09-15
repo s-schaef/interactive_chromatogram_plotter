@@ -9,13 +9,13 @@
     "version": "3.8.6",
     "package_manager": {
       "name": "pip",
-      "version": "24.3.1",
+      "version": "25.0.1",
       "package_file": "requirements.txt"
     }
   },
   "files": {
     "requirements.txt": {
-      "checksum": "7a5149e6946d1b6ad15d6146624a4724"
+      "checksum": "1031195649f4b74e2ac3b6c099d3f7e7"
     },
     ".vscode/launch.json": {
       "checksum": "16e31d0ff74b04754b0f6a481e04fe09"
