@@ -52,7 +52,7 @@ uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=Tru
 
 # Process uploaded files
 data_dict = {}
-x_data = None
+x_data_dict = {} #  = None
 default_names = {}
 
 if uploaded_files:
@@ -61,8 +61,8 @@ if uploaded_files:
         if error:
             st.error(f"Error in file {file.name}: {error}")
         else:
-            if x_data is None:
-                x_data = df.iloc[:, 0]
+            #if x_data is None:
+            x_data_dict[file.name] = df.iloc[:, 0]
             data_dict[file.name] = df.iloc[:, 1]
             default_names[file.name] = default_name or file.name
 
@@ -78,7 +78,7 @@ if data_dict:
         )
 
 ### plotting function
-def generate_plots(data_dict, custom_names, x_data, plot_configs):
+def generate_plots(data_dict, custom_names, x_data_dict, plot_configs):
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
     
@@ -96,7 +96,7 @@ def generate_plots(data_dict, custom_names, x_data, plot_configs):
         ax = axs[i]#, 0]
         for filename in config['files']:
             if filename in data_dict:  # Check if file exists
-                ax.plot(x_data, data_dict[filename], label=custom_names.get(filename, filename))
+                ax.plot(x_data_dict[filename], data_dict[filename], label=custom_names.get(filename, filename))
         ax.set_title(config['title'])
         # ax.set_xlabel("Time (min)")
         # ax.set_ylabel("Intensity (mAU)")
@@ -151,7 +151,7 @@ if data_dict:
         st.session_state['external_label'] = False # Initialize external label state
         external_label = st.toggle("External Legend")
 
-        fig = generate_plots(data_dict, custom_names, x_data, st.session_state.plot_configs)
+        fig = generate_plots(data_dict, custom_names, x_data_dict, st.session_state.plot_configs)
         
         if fig:
             st.pyplot(fig)
@@ -181,19 +181,22 @@ if data_dict:
                 )
 
 ### export functions
-def get_csv_download_data(data_dict, custom_names, x_data):
+def get_csv_download_data(data_dict, custom_names, x_data_dict):
     output = io.BytesIO()
-    df = pd.DataFrame(data_dict)
-    df.columns = [custom_names.get(col, col) for col in df.columns]
-    df.insert(0, "Time (min)", x_data)
-    df.to_csv(output, index=False)
+    new_df = pd.DataFrame() 
+
+    for col in data_dict:
+        new_df[f"Time - {custom_names.get(col, col)}"] = x_data_dict[col]
+        new_df[f"pA - {custom_names.get(col, col)}"] = data_dict[col]
+
+    new_df.to_csv(output, index=False)
     output.seek(0)
     return output.getvalue()
 
 # Data export section
 if data_dict:
     st.header("Export Data")
-    csv_data = get_csv_download_data(data_dict, custom_names, x_data)
+    csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
     st.download_button(
         label="Download Processed Data (CSV)",
         data=csv_data,
