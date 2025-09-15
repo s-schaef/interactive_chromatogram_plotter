@@ -15,7 +15,10 @@
   },
   "files": {
     "requirements.txt": {
-      "checksum": "d4d8b5963e4801be615cdfc4506f62ff"
+      "checksum": "23ee503bbf8581f9d1f30ecbe1a8d8a3"
+    },
+    ".vscode/launch.json": {
+      "checksum": "16e31d0ff74b04754b0f6a481e04fe09"
     },
     "README.md": {
       "checksum": "1c7686f8d6eed0fc0207b05b9b75e139"
