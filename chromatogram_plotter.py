@@ -5,81 +5,7 @@ import streamlit as st
 from itertools import cycle
 import matplotlib.pyplot as plt
 
-
-# Set page config
-st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
-
-# Main title
-st.title("Chromatogram Plotter")
-
-# Initialize session state
-if 'plot_configs' not in st.session_state:
-    st.session_state.plot_configs = []
-
-#### data functions
-def process_file(uploaded_file):
-    if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
-        return None, None, "File size exceeds 200MB limit."
-   
-    try:
-        # Read the first few lines to extract the default name
-        lines = []
-        for i, line in enumerate(uploaded_file):
-            if i < 7:  # Read enough lines to get to the 6th line
-                lines.append(line.decode('utf-8'))
-            else:
-                break
-       
-        # Reset file pointer
-        uploaded_file.seek(0)
-       
-        # Extract default name from 6th line, 2nd column (if available)
-        default_name = None
-        if len(lines) >= 6:
-            sixth_line_parts = lines[5].strip().split('\t')
-            if len(sixth_line_parts) >= 2 and sixth_line_parts[0].strip() == "Injection":
-                default_name = sixth_line_parts[1].strip()
-
-        # Read the file into a DataFrame    
-        df = pd.read_csv(uploaded_file, sep='\t', header=42)
-        if len(df.columns) != 3:
-            return None, None, "File should have exactly 3 columns."
-       
-        return df.iloc[:, [0, 2]], default_name, None  # Return 1st and 3rd columns
-    except Exception as e:
-        return None, None, f"Error processing file: {str(e)}"
-
-# File upload section
-uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt'])
-
-# Process uploaded files
-data_dict = {}
-x_data_dict = {} #  = None
-default_names = {}
-
-if uploaded_files:
-    for file in uploaded_files:
-        df, default_name, error = process_file(file)
-        if error:
-            st.error(f"Error in file {file.name}: {error}")
-        else:
-            #if x_data is None:
-            x_data_dict[file.name] = df.iloc[:, 0]
-            data_dict[file.name] = df.iloc[:, 1]
-            default_names[file.name] = default_name or file.name
-
-# Custom names input
-custom_names = {}
-if data_dict:
-    st.header("Custom Sample Names")
-    for filename in data_dict.keys():
-        custom_names[filename] = st.text_input(
-            f"Custom name for {filename}",
-            value=default_names[filename],
-            key=f"name_{filename}"
-        )
-
-### plotting function
+### function definitions
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None):
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
@@ -132,6 +58,103 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
 
     plt.tight_layout()
     return fig
+
+def process_file(uploaded_file): #TODO: catch file errors and return chromelion error
+    if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
+        return None, None, "File size exceeds 200MB limit."
+   
+    try:
+        # Read the first few lines to extract the default name
+        lines = []
+        for i, line in enumerate(uploaded_file):
+            if i < 7:  # Read enough lines to get to the 6th line
+                lines.append(line.decode('utf-8'))
+            else:
+                break
+       
+        # Reset file pointer
+        uploaded_file.seek(0)
+       
+        # Extract default name from 6th line, 2nd column (if available)
+        default_name = None
+        if len(lines) >= 6:
+            sixth_line_parts = lines[5].strip().split('\t')
+            if len(sixth_line_parts) >= 2 and sixth_line_parts[0].strip() == "Injection":
+                default_name = sixth_line_parts[1].strip()
+
+        # Read the file into a DataFrame    
+        df = pd.read_csv(uploaded_file, sep='\t', header=42)
+        if len(df.columns) != 3:
+            return None, None, "File should have exactly 3 columns."
+       
+        return df.iloc[:, [0, 2]], default_name, None  # Return 1st and 3rd columns
+    except Exception as e:
+        return None, None, f"Error processing file: {str(e)}"
+
+def get_csv_download_data(data_dict, custom_names, x_data_dict):
+    output = io.BytesIO()
+    new_df = pd.DataFrame() 
+
+    for col in data_dict:
+        new_df[f"Time - {custom_names.get(col, col)}"] = x_data_dict[col]
+        new_df[f"pA - {custom_names.get(col, col)}"] = data_dict[col]
+
+    new_df.to_csv(output, index=False)
+    output.seek(0)
+    return output.getvalue()
+
+
+### Streamlit app layout and logic
+# Set page config
+st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
+
+# Main title
+st.title("Chromatogram Plotter")
+# Initialize session state
+if 'plot_configs' not in st.session_state:
+    st.session_state.plot_configs = []
+
+# Tabs for different sections
+tab1, tab2 = st.tabs(["Data Upload", "Visualization & Export"])
+with tab1:
+    st.header("Upload Chromatogram Files")
+    st.markdown("""
+    Please upload one or more chromatogram files exported from Chromelion in .txt format.
+    You can also upload a preexisting CSV file with the same structure (e.g., exported from this app),
+    to continue working on it or to add data into it.
+    """)
+
+    # File upload section
+    # upload preexisting csv file 
+    uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt'])
+
+    # Process uploaded files
+    data_dict = {}
+    x_data_dict = {} #  = None
+    default_names = {}
+
+    if uploaded_files:
+        for file in uploaded_files:
+            df, default_name, error = process_file(file)
+            if error:
+                st.error(f"Error in file {file.name}: {error}")
+            else:
+                #if x_data is None:
+                x_data_dict[file.name] = df.iloc[:, 0]
+                data_dict[file.name] = df.iloc[:, 1]
+                default_names[file.name] = default_name or file.name
+
+    # Custom names input
+    custom_names = {}
+    if data_dict:
+        st.header("Custom Sample Names")
+        for filename in data_dict.keys():
+            custom_names[filename] = st.text_input(
+                f"Custom name for {filename}",
+                value=default_names[filename],
+                key=f"name_{filename}"
+            )
+
 # Plot configuration
 if data_dict:
     st.header("Plot Configuration")
@@ -218,18 +241,6 @@ if data_dict:
                     mime="image/svg+xml"
                 )   
 
-### export functions
-def get_csv_download_data(data_dict, custom_names, x_data_dict):
-    output = io.BytesIO()
-    new_df = pd.DataFrame() 
-
-    for col in data_dict:
-        new_df[f"Time - {custom_names.get(col, col)}"] = x_data_dict[col]
-        new_df[f"pA - {custom_names.get(col, col)}"] = data_dict[col]
-
-    new_df.to_csv(output, index=False)
-    output.seek(0)
-    return output.getvalue()
 
 # Data export section
 if data_dict:
