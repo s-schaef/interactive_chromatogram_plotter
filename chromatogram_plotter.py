@@ -195,6 +195,7 @@ with tab1:
                 value=default_names[filename],
                 key=f"name_{filename}"
             )
+        #TODO: document avoid duplicate names, move to visualization tab etc. 
 with tab2:
     # Load data from session state
     data_dict = st.session_state.get('data_dict', {})
