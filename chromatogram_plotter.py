@@ -59,7 +59,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     plt.tight_layout()
     return fig
 
-def process_file(uploaded_file): #TODO: catch file errors and return chromelion error
+def process_txt_file(uploaded_file): 
     if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
         return None, None, "File size exceeds 200MB limit."
    
@@ -89,7 +89,29 @@ def process_file(uploaded_file): #TODO: catch file errors and return chromelion 
        
         return df.iloc[:, [0, 2]], default_name, None  # Return 1st and 3rd columns
     except Exception as e:
-        return None, None, f"Error processing file: {str(e)}"
+        return None, None, f"Error processing file: {str(e)} \n Please ensure the file is a valid Chromelion exported .txt file."
+
+def process_csv_file(uploaded_file):
+    if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
+        return None, None, None, "File size exceeds 200MB limit."
+    try:
+        df = pd.read_csv(uploaded_file)
+        data_dict = {}
+        x_data_dict = {}
+        custom_names = {}
+        
+        for column in df.columns:
+            if column.startswith("Time - "):
+                sample_name = column[7:]  # Remove "Time - " prefix
+                x_data_dict[sample_name] = df[column]
+            elif column.startswith("pA - "):
+                sample_name = column[5:]  # Remove "pA - " prefix
+                data_dict[sample_name] = df[column]
+                custom_names[sample_name] = sample_name
+        
+        return data_dict, x_data_dict, custom_names, None
+    except Exception as e:
+        return None, None, None, f"Error processing CSV file: {str(e)}"
 
 def get_csv_download_data(data_dict, custom_names, x_data_dict):
     output = io.BytesIO()
@@ -135,7 +157,7 @@ with tab1:
 
     if uploaded_files:
         for file in uploaded_files:
-            df, default_name, error = process_file(file)
+            df, default_name, error = process_txt_file(file)
             if error:
                 st.error(f"Error in file {file.name}: {error}")
             else:
