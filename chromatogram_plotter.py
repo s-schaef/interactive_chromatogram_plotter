@@ -184,7 +184,7 @@ if data_dict:
             st.pyplot(fig)
             
             # Download options
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 buf = io.BytesIO()
                 fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
@@ -206,6 +206,17 @@ if data_dict:
                     file_name="chromatogram_plot.pdf",
                     mime="application/pdf"
                 )
+            
+            with col3:
+                buf_svg = io.BytesIO()
+                fig.savefig(buf_svg, format="svg", bbox_inches='tight')
+                buf_svg.seek(0)     
+                st.download_button(
+                    label="Download Plot (SVG)",
+                    data=buf_svg.getvalue(),
+                    file_name="chromatogram_plot.svg",
+                    mime="image/svg+xml"
+                )   
 
 ### export functions
 def get_csv_download_data(data_dict, custom_names, x_data_dict):
