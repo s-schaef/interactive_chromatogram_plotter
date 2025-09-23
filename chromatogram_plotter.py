@@ -243,14 +243,12 @@ with st.sidebar:
     4. **Export**: Download plots or processed data
     
     **File Requirements:**
-    - Tab-separated .txt files
-    - 3 columns (unused second column)
-    - Data starts at row 43
+    Only Chromelion exported .txt files can be used.
     """)
     
     st.header("About")
     st.markdown("""
-    Chromatogram Plotter v1.0
-    Developed by Stefan Schaefer 
+    Chromatogram Plotter v1.1\n
+    Developed by Stefan Schaefer\n 
     2025   
     """)
