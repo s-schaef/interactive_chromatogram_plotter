@@ -190,7 +190,7 @@ with tab1:
     if st.session_state.data_dict:
         st.header("Custom Sample Names")
         for filename in st.session_state.data_dict.keys():
-            st.settion_state.custom_names[filename] = st.text_input(
+            st.session_state.custom_names[filename] = st.text_input(
                 f"Custom name for {filename}",
                 value=default_names[filename],
                 key=f"name_{filename}"
