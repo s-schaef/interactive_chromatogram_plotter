@@ -169,9 +169,9 @@ with tab1:
     # upload new txt files    
     uploaded_txt_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt'])
     
-    # Process uploaded txt files
-    data_dict = {}
-    x_data_dict = {} #  = None
+    # # Process uploaded txt files
+    # data_dict = {}
+    # x_data_dict = {} #  = None
     default_names = {}
 
     if uploaded_txt_files:
@@ -181,16 +181,16 @@ with tab1:
                 st.error(f"Error in file {file.name}: {error}")
             else:
                 #if x_data is None:
-                x_data_dict[file.name] = df.iloc[:, 0]
-                data_dict[file.name] = df.iloc[:, 1]
+                st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
+                st.session_state.data_dict[file.name] = df.iloc[:, 1]
                 default_names[file.name] = default_name or file.name
 
     # Custom names input
     custom_names = {}
-    if data_dict:
+    if st.session_state.data_dic:
         st.header("Custom Sample Names")
-        for filename in data_dict.keys():
-            custom_names[filename] = st.text_input(
+        for filename in st.session_state.data_dic.keys():
+            st.settion_state.custom_names[filename] = st.text_input(
                 f"Custom name for {filename}",
                 value=default_names[filename],
                 key=f"name_{filename}"
