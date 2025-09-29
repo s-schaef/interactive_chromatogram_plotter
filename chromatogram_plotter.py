@@ -22,9 +22,11 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     else:
         fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=True, sharey=True, sharex=True)
     axs = axs.flat
-    
-    #color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    
+
+    # remove unused axis in case of 5 plots
+    if len(valid_configs) == 5:
+        axs[-1].set_visible(False)
+        
     for i, config in enumerate(valid_configs):
         ax = axs[i]
         
@@ -261,7 +263,7 @@ with tab2:
     # Generate and display plots
         if st.session_state.plot_configs and any(config.get('files') for config in st.session_state.plot_configs):
             st.header("Generated Plots")
-            external_label = st.toggle("External Legend")
+            external_label = st.toggle("Enable external legend")
             custom_legend = None
             if external_label:
                 custom_legend = st.text_area("Custom Legend Text (one entry per line)", height=100)
@@ -271,9 +273,8 @@ with tab2:
                 st.session_state.plot_configs, 
                 external_label=external_label, 
                 custom_legend=custom_legend,
-                # suptitle_enabled=st.toggle("Enable common title?", value=True),
-                suptitle=st.text_input("Common Title", value="Formulation") if st.toggle("Enable common title?", value=True) else "",
-                supaxes_enabled=st.toggle("Enable common axis labels?", value=True),
+                suptitle=st.text_input("Common Title", value="Formulation") if st.toggle("Enable common title", value=True) else "",
+                supaxes_enabled=st.toggle("Enable common axis labels", value=True),
             )
             
             if fig:
