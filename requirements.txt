@@ -1,3 +1,4 @@
+plotly
 altair==4.1.0
 pandas==1.4.4
 streamlit==1.36.0
