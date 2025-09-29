@@ -190,7 +190,7 @@ def get_csv_download_data(data_dict, custom_names, x_data_dict):
     output.seek(0)
     return output.getvalue()
 
-def color_cycler():
+def MatplotlibColorCycler():
     """Returns an iterator that cycles through matplotlib's default hex colors."""
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     return cycle(colors)
