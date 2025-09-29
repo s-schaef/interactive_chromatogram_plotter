@@ -212,120 +212,120 @@ with tab1:
     # provide button to change into the visualization tab
     if st.button("Go to Visualization & Export tab"):
         with tab2:
-        # Load data from session state
-        data_dict = st.session_state.get('data_dict', {})
-        x_data_dict = st.session_state.get('x_data_dict', {})
-        custom_names = st.session_state.get('custom_names', {})
+            # Load data from session state
+            data_dict = st.session_state.get('data_dict', {})
+            x_data_dict = st.session_state.get('x_data_dict', {})
+            custom_names = st.session_state.get('custom_names', {})
 
-        # Update session state with new uploads
-        if uploaded_txt_files:
-            st.session_state.data_dict.update(data_dict)
-            st.session_state.x_data_dict.update(x_data_dict)
-            st.session_state.custom_names.update(custom_names)
-            data_dict = st.session_state.data_dict
-            x_data_dict = st.session_state.x_data_dict
-            custom_names = st.session_state.custom_names
-        # Plot configuration
-        if data_dict:
-            st.header("Plot Configuration")
-            
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                if st.button("Add Plot"):
-                    st.session_state.plot_configs.append({'files': []})
+            # Update session state with new uploads
+            if uploaded_txt_files:
+                st.session_state.data_dict.update(data_dict)
+                st.session_state.x_data_dict.update(x_data_dict)
+                st.session_state.custom_names.update(custom_names)
+                data_dict = st.session_state.data_dict
+                x_data_dict = st.session_state.x_data_dict
+                custom_names = st.session_state.custom_names
+            # Plot configuration
+            if data_dict:
+                st.header("Plot Configuration")
                 
-                if st.session_state.plot_configs and st.button("Clear All Plots"):
-                    st.session_state.plot_configs = []
-                    st.rerun()
-            
-            # Configure each plot
-            for i, config in enumerate(st.session_state.plot_configs):
-                with st.expander(f"Plot {i+1} Configuration", expanded=True):
-                    col1, col2, col3 = st.columns([1, 5, 1])
-                    with col1:
-                        config['title'] = st.text_input(f"Rename Plot {i+1}", value=f"F{i+1}", key=f"title_{i}")
+                col1, col2 = st.columns([1, 5])
+                with col1:
+                    if st.button("Add Plot"):
+                        st.session_state.plot_configs.append({'files': []})
+                    
+                    if st.session_state.plot_configs and st.button("Clear All Plots"):
+                        st.session_state.plot_configs = []
+                        st.rerun()
+                
+                # Configure each plot
+                for i, config in enumerate(st.session_state.plot_configs):
+                    with st.expander(f"Plot {i+1} Configuration", expanded=True):
+                        col1, col2, col3 = st.columns([1, 5, 1])
+                        with col1:
+                            config['title'] = st.text_input(f"Rename Plot {i+1}", value=f"F{i+1}", key=f"title_{i}")
 
-                    with col2:
-                        config['files'] = st.multiselect(
-                            f"Select files for Plot {i+1}", 
-                            options=list(data_dict.keys()),
-                            default=config.get('files', []),
-                            format_func=lambda x: custom_names.get(x, x),
-                            key=f"plot_{i}"
-                        )
-                    with col3:
-                        if st.button(f"Remove", key=f"remove_{i}"):
-                            st.session_state.plot_configs.pop(i)
-                            st.rerun()
+                        with col2:
+                            config['files'] = st.multiselect(
+                                f"Select files for Plot {i+1}", 
+                                options=list(data_dict.keys()),
+                                default=config.get('files', []),
+                                format_func=lambda x: custom_names.get(x, x),
+                                key=f"plot_{i}"
+                            )
+                        with col3:
+                            if st.button(f"Remove", key=f"remove_{i}"):
+                                st.session_state.plot_configs.pop(i)
+                                st.rerun()
 
-        # Generate and display plots
-            if st.session_state.plot_configs and any(config.get('files') for config in st.session_state.plot_configs):
-                st.header("Generated Plots")
-                external_label = st.toggle("Enable external legend")
-                custom_legend = None
-                if external_label:
-                    custom_legend = st.text_area("Custom Legend Text (one entry per line)", height=100)
+            # Generate and display plots
+                if st.session_state.plot_configs and any(config.get('files') for config in st.session_state.plot_configs):
+                    st.header("Generated Plots")
+                    external_label = st.toggle("Enable external legend")
+                    custom_legend = None
+                    if external_label:
+                        custom_legend = st.text_area("Custom Legend Text (one entry per line)", height=100)
 
-                fig = generate_plots(
-                    data_dict, custom_names, x_data_dict, 
-                    st.session_state.plot_configs, 
-                    external_label=external_label, 
-                    custom_legend=custom_legend,
-                    suptitle=st.text_input("Common Title", value="Formulation") if st.toggle("Enable common title", value=True) else "",
-                    supaxes_enabled=st.toggle("Enable common axis labels", value=True),
+                    fig = generate_plots(
+                        data_dict, custom_names, x_data_dict, 
+                        st.session_state.plot_configs, 
+                        external_label=external_label, 
+                        custom_legend=custom_legend,
+                        suptitle=st.text_input("Common Title", value="Formulation") if st.toggle("Enable common title", value=True) else "",
+                        supaxes_enabled=st.toggle("Enable common axis labels", value=True),
+                    )
+                    
+                    if fig:
+                        st.pyplot(fig)
+                        
+                        # Download options
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            buf = io.BytesIO()
+                            fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
+                            buf.seek(0)
+                            st.download_button(
+                                label="Download Plot (PNG)",
+                                data=buf.getvalue(),
+                                file_name="chromatogram_plot.png",
+                                mime="image/png"
+                            )
+                        
+                        with col2:
+                            buf_pdf = io.BytesIO()
+                            fig.savefig(buf_pdf, format="pdf", bbox_inches='tight')
+                            buf_pdf.seek(0)
+                            st.download_button(
+                                label="Download Plot (PDF)",
+                                data=buf_pdf.getvalue(),
+                                file_name="chromatogram_plot.pdf",
+                                mime="application/pdf"
+                            )
+                        
+                        with col3:
+                            buf_svg = io.BytesIO()
+                            fig.savefig(buf_svg, format="svg", bbox_inches='tight')
+                            buf_svg.seek(0)     
+                            st.download_button(
+                                label="Download Plot (SVG)",
+                                data=buf_svg.getvalue(),
+                                file_name="chromatogram_plot.svg",
+                                mime="image/svg+xml"
+                            )   
+
+
+            # Data export section
+            if data_dict:
+                st.header("Export Data")
+                csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
+                st.download_button(
+                    label="Download Processed Data (CSV)",
+                    data=csv_data,
+                    file_name="processed_chromatogram_data.csv",
+                    mime="text/csv"
                 )
-                
-                if fig:
-                    st.pyplot(fig)
-                    
-                    # Download options
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        buf = io.BytesIO()
-                        fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
-                        buf.seek(0)
-                        st.download_button(
-                            label="Download Plot (PNG)",
-                            data=buf.getvalue(),
-                            file_name="chromatogram_plot.png",
-                            mime="image/png"
-                        )
-                    
-                    with col2:
-                        buf_pdf = io.BytesIO()
-                        fig.savefig(buf_pdf, format="pdf", bbox_inches='tight')
-                        buf_pdf.seek(0)
-                        st.download_button(
-                            label="Download Plot (PDF)",
-                            data=buf_pdf.getvalue(),
-                            file_name="chromatogram_plot.pdf",
-                            mime="application/pdf"
-                        )
-                    
-                    with col3:
-                        buf_svg = io.BytesIO()
-                        fig.savefig(buf_svg, format="svg", bbox_inches='tight')
-                        buf_svg.seek(0)     
-                        st.download_button(
-                            label="Download Plot (SVG)",
-                            data=buf_svg.getvalue(),
-                            file_name="chromatogram_plot.svg",
-                            mime="image/svg+xml"
-                        )   
-
-
-        # Data export section
-        if data_dict:
-            st.header("Export Data")
-            csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
-            st.download_button(
-                label="Download Processed Data (CSV)",
-                data=csv_data,
-                file_name="processed_chromatogram_data.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("Please upload chromatogram files to begin processing.")
+            else:
+                st.info("Please upload chromatogram files to begin processing.")
 
 
 
