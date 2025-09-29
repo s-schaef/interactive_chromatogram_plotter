@@ -152,6 +152,12 @@ if 'x_data_dict' not in st.session_state:
 if 'custom_names' not in st.session_state:
     st.session_state.custom_names = {}
 
+tab = st.select_slider(
+    "Step",
+    options=["1", "2",],
+    key="tab",
+    label_visibility="hidden",
+)
 
 # Tabs for different sections
 tab1, tab2 = st.tabs(["Data Upload", "Visualization & Export"])
@@ -208,10 +214,14 @@ with tab1:
         #TODO: document avoid duplicate names, move to visualization tab etc. 
     
     st.info("After uploading files and setting custom names, please switch to the 'Visualization & Export' tab.")
-    # provide button to switch tab
-    if st.button("Go to Visualization & Export tab"):
-        st.experimental_set_query_params(tab="Visualization & Export")
-        st.experimental_rerun()
+    # provide button to change into the visualization tab
+    if tab == "1":
+        def set_tab():
+            st.session_state["tab"] = "2"
+
+        st.button("Next Step", type="primary", on_click=set_tab)
+
+
 
 with tab2:
     # Load data from session state
