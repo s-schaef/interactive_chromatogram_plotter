@@ -375,18 +375,11 @@ elif st.session_state.current_page == 'visualization':
                         # select files to plot from checkbox list
                         for option in list(data_dict.keys()):
                             if option not in config['files']:
-                                config['files'].append(option) if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}", value=False) else None
+                                if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
+                                    config['files'].append(option)
                             else:
-                                config['files'].remove(option) if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}", value=True) else None
-
-                 
-                        # config['files'] = st.multiselect(
-                        #     "Select files to plot", 
-                        #     options=list(data_dict.keys()),
-                        #     default=config.get('files', []),
-                        #     format_func=lambda x: custom_names.get(x, x),
-                        #     key=f"plot_{i}",
-                        # )
+                                if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
+                                    config['files'].remove(option)
                     
                     with col3:
                         if st.button("🗑️", key=f"remove_{i}", help="Remove this plot"):
