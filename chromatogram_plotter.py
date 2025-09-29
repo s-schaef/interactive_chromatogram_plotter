@@ -266,7 +266,7 @@ with tab2:
                 external_label=external_label, 
                 custom_legend=custom_legend,
                 # suptitle_enabled=st.toggle("Enable common title?", value=True),
-                suptitle=st.input("Common Title", value="Formulation") if st.toggle("Enable common title?", value=True) else "",
+                suptitle=st.text_input("Common Title", value="Formulation") if st.toggle("Enable common title?", value=True) else "",
                 supaxes_enabled=st.toggle("Enable common axis labels?", value=True),
             )
             
