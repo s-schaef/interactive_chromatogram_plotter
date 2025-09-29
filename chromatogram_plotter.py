@@ -266,7 +266,7 @@ with tab2:
     if data_dict:
         st.header("Plot Configuration")
         
-        col1, col2, col3 = st.columns([1, 1, 5])
+        col1, col2, col3 = st.columns([1, 2, 4])
         with col1:
             if st.button("Add Plot"):
                 st.session_state.plot_configs.append({'files': []})
@@ -277,8 +277,8 @@ with tab2:
         
         # Configure each plot
         for i, config in enumerate(st.session_state.plot_configs):
-            with st.expander(f"Plot {i+1} Configuration", expanded=True):
-                col1, col2, col3 = st.columns([1, 5, 1])
+            with st.expander(f"Plot {i+1} Configuration", expanded=True): #TODO: use expander or alternative?
+                col1, col2, col3 = st.columns([1, 9, 2])
                 with col1:
                     config['title'] = st.text_input(f"Rename Plot {i+1}", value=f"F{i+1}", key=f"title_{i}")
 
