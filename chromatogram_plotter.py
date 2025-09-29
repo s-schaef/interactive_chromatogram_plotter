@@ -4,12 +4,14 @@ import pandas as pd
 import streamlit as st
 from itertools import cycle
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 ### Function definitions ###
 
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None,
                    suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=True):
-    """Generate matplotlib plots based on configuration."""
+    """Generate interactive Plotly plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
     
@@ -18,106 +20,66 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     
     # Handle subplot layout
     if len(valid_configs) in [1, 2, 3]:
-        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False)
+        rows, cols = 1, len(valid_configs)
     elif len(valid_configs) == 4:
-        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False)
+        rows, cols = 2, 2
     else:
-        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=False)
-    axs = axs.flat
-
-    # Remove unused axes for non-rectangular layouts
-    total_subplots = len(axs)
-    for i in range(len(valid_configs), total_subplots):
-        axs[i].set_visible(False)
-        
+        rows = math.ceil(len(valid_configs)/3)
+        cols = 3
+    
+    # Create subplot figure
+    fig = make_subplots(
+        rows=rows, cols=cols,
+        subplot_titles=[config.get('title', f'Plot {i+1}') for i, config in enumerate(valid_configs)],
+        shared_xaxes=supaxes_enabled,
+        shared_yaxes=supaxes_enabled
+    )
+    
+    # Add traces to subplots
     for i, config in enumerate(valid_configs):
-        ax = axs[i]
+        row = (i // cols) + 1
+        col = (i % cols) + 1
         
-        if external_label: # and custom_legend:
-            for filename in config['files']:
-                if filename in data_dict:
-                    ax.plot(x_data_dict[filename], data_dict[filename])
-        else:
-            for filename in config['files']:
-                if filename in data_dict:
-                    ax.plot(
-                        x_data_dict[filename], 
-                        data_dict[filename], 
-                        label=custom_names.get(filename, filename)
-                    )
-            # if config['files'] and not custom_legend:  # Only add legend if there are files
-            #     ax.legend(loc="upper left", fontsize='small')
-        
-        ax.set_title(config.get('title', f'Plot {i+1}'))
+        for filename in config['files']:
+            if filename in data_dict:
+                trace = go.Scatter(
+                    x=x_data_dict[filename],
+                    y=data_dict[filename],
+                    name=custom_names.get(filename, filename),
+                    line=dict(width=2),
+                    showlegend=not external_label or i == 0,  # Show legend only once if external
+                )
+                fig.add_trace(trace, row=row, col=col)
     
-    if suptitle_enabled and suptitle:
-        fig.suptitle(suptitle, fontsize=16)
+    # Update layout
+    fig.update_layout(
+        title=suptitle if suptitle_enabled else None,
+        height=400 * rows,  # Adjust height based on number of rows
+        width=800 if cols < 3 else 1200,  # Adjust width based on number of columns
+        showlegend=True,
+        legend=dict(
+            yanchor="middle",
+            y=0.5,
+            xanchor="right" if external_label else "left",
+            x=1.15 if external_label else 1.02
+        ),
+        clickmode='event+select'  # Enable clicking on traces
+    )
     
+    # Update axes labels if common axes are enabled
     if supaxes_enabled:
-        fig.supxlabel("Time (min)")
-        fig.supylabel("Intensity (mAU)")
-        
-        # Determine the layout shape
-        if len(valid_configs) in [1, 2, 3]:
-            rows, cols = 1, len(valid_configs)
-        elif len(valid_configs) == 4:
-            rows, cols = 2, 2
-        else:
-            rows, cols = math.ceil(len(valid_configs)/3), 3
-        
-        # Hide tick labels for non-edge axes
-        for i, ax in enumerate(axs[:len(valid_configs)]):
-            if not ax.get_visible():
-                continue
-                
-            # Calculate row and column position
-            row = i // cols
-            col = i % cols
-            
-            # Only show y-tick labels for leftmost axes
-            if col > 0:
-                ax.tick_params(axis='y', labelleft=False)
-            
-            # Only show x-tick labels for bottom axes
-            if row < (rows - 1):
-                ax.tick_params(axis='x', labelbottom=False)
-    else:
-        all_ylims = []
-        for ax in axs:
-            if ax.get_visible():
-                ax.set_xlabel("Time (min)")
-                ax.set_ylabel("Intensity (mAU)")
-                
-                # Update limits based on the plotted data
-                ax.relim()
-                ax.autoscale_view()
-                
-                all_ylims.append(ax.get_ylim())
-        
-        # Now set consistent y-limits across all axes
-        if all_ylims:
-            y_min = min(lim[0] for lim in all_ylims)
-            y_max = max(lim[1] for lim in all_ylims)
-            for ax in axs:
-                if ax.get_visible():
-                    ax.set_ylim(y_min, y_max)
+        fig.update_xaxes(title_text="Time (min)")
+        fig.update_yaxes(title_text="Intensity (mAU)")
     
-    if external_label and custom_legend:
-        labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
-        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
-    elif external_label and not custom_legend:
-        # Use custom names for external legend
-        unique_files = []
-        for config in valid_configs:
-            for filename in config['files']:
-                if filename not in unique_files:
-                    unique_files.append(filename)
-        labels = [custom_names.get(f, f) for f in unique_files]
-        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
-
-    plt.tight_layout()
+    # Add interactivity with custom JavaScript
+    fig.update_traces(
+        hovertemplate="Time: %{x:.2f}<br>Intensity: %{y:.2f}<extra></extra>",
+        # Enable trace selection
+        selected=dict(marker=dict(size=10)),
+        unselected=dict(marker=dict(opacity=0.5))
+    )
+    
     return fig
-
 def process_txt_file(uploaded_file):
     """Process a Chromelion exported .txt file."""
     if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
@@ -425,7 +387,7 @@ elif st.session_state.current_page == 'visualization':
                 )
                 
                 if fig:
-                    st.pyplot(fig)
+                    st.plotly_chart(fig, use_container_width=True)
                     
                     # Download options
                     st.subheader("Download Options")
