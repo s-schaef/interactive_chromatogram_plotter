@@ -190,7 +190,7 @@ def get_csv_download_data(data_dict, custom_names, x_data_dict):
     output.seek(0)
     return output.getvalue()
 
-def MatplotlibColorCycler():
+def MatplotlibColorCycler(): #TODO: colors are reset for each new data entry, should be only reset for a new plot
     """Returns an iterator that cycles through matplotlib's default hex colors."""
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     return cycle(colors)
@@ -392,7 +392,14 @@ elif st.session_state.current_page == 'visualization':
                                         config['files'].append(option)
                                         with col22:
                                             # ask for custom color to be later used in the plot
+                                            #TODO: colors are reset for each new data entry, should be only reset for a new plot
+                                            #FIXME: color is not saved in session state/ does not make it into the plot
                                             st.color_picker("Pick a color (optional)", value=next(color_cycler) ,key=f"color_{i}_{option}, size=5, ")
+                                            # FIXME: below three lines are not tested at all!!! 
+                                            color = st.session_state.get(f"color_{i}_{option}", None)
+                                            if color:
+                                                st.session_state[f"color_{i}_{option}"] = color 
+
                                         
                                 else:
                                     if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
