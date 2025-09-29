@@ -266,11 +266,11 @@ with tab2:
     if data_dict:
         st.header("Plot Configuration")
         
-        col1, col2 = st.columns([1, 5])
+        col1, col2, col3 = st.columns([1, 1, 5])
         with col1:
             if st.button("Add Plot"):
                 st.session_state.plot_configs.append({'files': []})
-            
+        with col2:
             if st.session_state.plot_configs and st.button("Clear All Plots"):
                 st.session_state.plot_configs = []
                 st.rerun()
