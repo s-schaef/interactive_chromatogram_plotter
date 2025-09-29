@@ -102,7 +102,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                 if ax.get_visible():
                     ax.set_ylim(y_min, y_max)
     
-    if external_label and custom_legend:
+    if external_label: # and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
     # elif external_label and not custom_legend:
