@@ -54,21 +54,41 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
         fig.supxlabel("Time (min)")
         fig.supylabel("Intensity (mAU)")
     else:
+        # get global x and y limits
         all_xlims = [ax.get_xlim() for ax in axs if ax.get_visible()]
-        all_ylims = [ax.get_ylim() for ax in axs if ax.get_visible()]
-        
-        # Set consistent limits across all axes
+        all_ylims = [ax.get_ylim() for ax in axs if ax.get_visible()] 
+        st.text(f"X limits: {all_xlims}")
+        st.text(f"Y limits: {all_ylims}")  
         x_min = min(lim[0] for lim in all_xlims)
         x_max = max(lim[1] for lim in all_xlims)
         y_min = min(lim[0] for lim in all_ylims)
-        y_max = max(lim[1] for lim in all_ylims)
-        
-        for ax in axs:
+        y_max = max(lim[1] for lim in all_ylims)        
+
+        for ax in axs:  
             if ax.get_visible():
                 ax.set_xlabel("Time (min)")
                 ax.set_ylabel("Intensity (mAU)")
                 ax.set_xlim(x_min, x_max)
                 ax.set_ylim(y_min, y_max)
+        # Previous simpler version without consistent limits    
+
+
+
+        # all_xlims = [ax.get_xlim() for ax in axs if ax.get_visible()]
+        # all_ylims = [ax.get_ylim() for ax in axs if ax.get_visible()]
+        
+        # # Set consistent limits across all axes
+        # x_min = min(lim[0] for lim in all_xlims)
+        # x_max = max(lim[1] for lim in all_xlims)
+        # y_min = min(lim[0] for lim in all_ylims)
+        # y_max = max(lim[1] for lim in all_ylims)
+        
+        # for ax in axs:
+        #     if ax.get_visible():
+        #         ax.set_xlabel("Time (min)")
+        #         ax.set_ylabel("Intensity (mAU)")
+        #         ax.set_xlim(x_min, x_max)
+        #         ax.set_ylim(y_min, y_max)
     
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
