@@ -288,7 +288,8 @@ if st.session_state.current_page == 'data_upload':
     # Custom names input
     if st.session_state.data_dict:
         st.subheader("Custom Sample Names")
-        st.info("💡 Tip: Provide unique, descriptive names for each sample to make them easier to identify in plots.")
+        st.info("💡 Tip: Provide unique, descriptive names for each sample to make them easier to identify.\
+                A global legend that allows using the same names for different samples is available in the next step.")
         
         # Display in columns for better organization
         num_cols = 2
