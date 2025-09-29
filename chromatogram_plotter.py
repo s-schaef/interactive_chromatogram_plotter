@@ -204,13 +204,11 @@ with tab1:
                 key=f"name_{filename}"
             )
         #TODO: document avoid duplicate names, move to visualization tab etc. 
-    # Notify user to change tab with a simple text
-    st.text_area("Next Steps", value="After uploading files and setting custom names, please switch to the 'Visualization & Export' tab.", height=80)
-
+    
     st.info("After uploading files and setting custom names, please switch to the 'Visualization & Export' tab.")
     # provide button to switch tab
     if st.button("Go to Visualization & Export tab"):
-        st.experimental_set_query_params(tab="visualization")
+        st.experimental_set_query_params(tab="Visualization & Export")
         st.experimental_rerun()
 
 with tab2:
