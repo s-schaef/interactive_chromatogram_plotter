@@ -54,11 +54,21 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
         fig.supxlabel("Time (min)")
         fig.supylabel("Intensity (mAU)")
     else:
+        all_xlims = [ax.get_xlim() for ax in axs if ax.get_visible()]
+        all_ylims = [ax.get_ylim() for ax in axs if ax.get_visible()]
+        
+        # Set consistent limits across all axes
+        x_min = min(lim[0] for lim in all_xlims)
+        x_max = max(lim[1] for lim in all_xlims)
+        y_min = min(lim[0] for lim in all_ylims)
+        y_max = max(lim[1] for lim in all_ylims)
+        
         for ax in axs:
-            ax.set_xlabel("Time (min)")
-            ax.set_ylabel("Intensity (mAU)")
-            ax.set_xticklabels(axs[0].get_xticklabels(), rotation=0, ha='center')
-            ax.set_yticklabels(axs[0].get_yticklabels(), rotation=0, va='center')
+            if ax.get_visible():
+                ax.set_xlabel("Time (min)")
+                ax.set_ylabel("Intensity (mAU)")
+                ax.set_xlim(x_min, x_max)
+                ax.set_ylim(y_min, y_max)
     
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
