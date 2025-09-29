@@ -16,11 +16,11 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     
     # Handle subplot layout
     if len(valid_configs) in [1, 2, 3]:
-        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False, sharey=True, sharex=True)
+        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False, sharey=False, sharex=False)
     elif len(valid_configs) == 4:
-        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False, sharey=True, sharex=True)
+        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False, sharey=False, sharex=False)
     else:
-        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=True, sharey=True, sharex=True)
+        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=True, sharey=False, sharex=False)
     axs = axs.flat
 
     # remove unused axis in case of 5 plots
