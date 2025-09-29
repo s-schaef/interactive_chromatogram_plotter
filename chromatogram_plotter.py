@@ -33,7 +33,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     for i, config in enumerate(valid_configs):
         ax = axs[i]
         
-        if external_label and custom_legend:
+        if external_label: # and custom_legend:
             for filename in config['files']:
                 if filename in data_dict:
                     ax.plot(x_data_dict[filename], data_dict[filename])
@@ -45,8 +45,8 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                         data_dict[filename], 
                         label=custom_names.get(filename, filename)
                     )
-            if config['files'] and not custom_legend:  # Only add legend if there are files
-                ax.legend(loc="upper left", fontsize='small')
+            # if config['files'] and not custom_legend:  # Only add legend if there are files
+            #     ax.legend(loc="upper left", fontsize='small')
         
         ax.set_title(config.get('title', f'Plot {i+1}'))
     
