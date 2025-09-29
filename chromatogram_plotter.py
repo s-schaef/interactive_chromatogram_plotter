@@ -97,7 +97,7 @@ def process_txt_file(uploaded_file):
     except Exception as e:
         return None, None, f"Error processing file: {str(e)} \n Please ensure the file is a valid Chromelion exported .txt file."
 
-def process_csv_file(uploaded_file):
+def process_csv_file(uploaded_file): #fix key error
     if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
         return None, None, None, "File size exceeds 200MB limit."
     try:
@@ -265,7 +265,7 @@ with tab2:
                 st.session_state.plot_configs, 
                 external_label=external_label, 
                 custom_legend=custom_legend,
-                suptitle_enabled=st.toggle("Enable common title?", value=True),
+                # suptitle_enabled=st.toggle("Enable common title?", value=True),
                 suptitle=st.input("Common Title", value="Formulation") if st.toggle("Enable common title?", value=True) else "",
                 supaxes_enabled=st.toggle("Enable common axis labels?", value=True),
             )
@@ -323,21 +323,21 @@ with tab2:
         st.info("Please upload chromatogram files to begin processing.")
 
 # Add sidebar with instructions
-with st.sidebar:
-    st.header("Instructions")
-    st.markdown("""
-    1. **Upload Files**: Select one or more .txt chromatogram files
-    2. **Customize Names**: Edit sample names if needed
-    3. **Create Plots**: Click 'Add Plot' and select files to display
-    4. **Export**: Download plots or processed data
+# with st.sidebar:
+#     st.header("Instructions")
+#     st.markdown("""
+#     1. **Upload Files**: Select one or more .txt chromatogram files
+#     2. **Customize Names**: Edit sample names if needed
+#     3. **Create Plots**: Click 'Add Plot' and select files to display
+#     4. **Export**: Download plots or processed data
     
-    **File Requirements:**
-    Only Chromelion exported .txt files can be used.
-    """)
+#     **File Requirements:**
+#     Only Chromelion exported .txt files can be used.
+#     """)
     
-    st.header("About")
-    st.markdown("""
-    Chromatogram Plotter v1.1\n
-    Developed by Stefan Schaefer\n 
-    2025   
-    """)
+#     st.header("About")
+#     st.markdown("""
+#     Chromatogram Plotter v1.1\n
+#     Developed by Stefan Schaefer\n 
+#     2025   
+#     """)
