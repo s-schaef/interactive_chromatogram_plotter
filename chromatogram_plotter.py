@@ -6,7 +6,8 @@ from itertools import cycle
 import matplotlib.pyplot as plt
 
 ### function definitions
-def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None):
+def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None,
+                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=True):
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
     
@@ -45,10 +46,15 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                     )
             ax.legend(loc="upper left", fontsize='small')
         ax.set_title(config['title'])
-    
-    fig.suptitle("Formulation", fontsize=16)
-    fig.supxlabel("Time (min)")
-    fig.supylabel("Intensity (mAU)")
+    if suptitle_enabled:
+        fig.suptitle(suptitle, fontsize=16)
+    if supaxes_enabled:
+        fig.supxlabel("Time (min)")
+        fig.supylabel("Intensity (mAU)")
+    else:
+        for ax in axs:
+            ax.set_xlabel("Time (min)")
+            ax.set_ylabel("Intensity (mAU)")
     
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
@@ -256,6 +262,9 @@ with tab2:
                 st.session_state.plot_configs, 
                 external_label=external_label, 
                 custom_legend=custom_legend
+                suptitle_enabled=st.toggle("Enable common title?", value=True),
+                suptitle=st.input("Common Title", value="Formulation") if st.toggle("Enable common title?", value=True), 
+                supaxes_enabled=st.toggle("Enable common axis labels?", value=True),
             )
             
             if fig:
