@@ -190,17 +190,10 @@ def get_csv_download_data(data_dict, custom_names, x_data_dict):
     output.seek(0)
     return output.getvalue()
 
-### Color cycle iterator ###
-class MatplotlibColorCycler:
-    """Iterator that cycles through matplotlib's default colors."""
-    
-    def __init__(self):
-        # Get the default matplotlib color cycle
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        self.colors = cycle(prop_cycle.by_key()['color'])
-    
-    def __iter__(self):
-        return self
+def color_cycler():
+    """Returns an iterator that cycles through matplotlib's default hex colors."""
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    return cycle(colors)
     
 
 ### Main Application ###
@@ -398,7 +391,7 @@ elif st.session_state.current_page == 'visualization':
                                         config['files'].append(option)
                                         with col22:
                                             # ask for custom color to be later used in the plot
-                                            st.color_picker("Pick a color (optional)", value=color_cycler ,key=f"color_{i}_{option}, size=10, ")
+                                            st.color_picker("Pick a color (optional)", value=next(color_cycler) ,key=f"color_{i}_{option}, size=10, ")
                                         
                                 else:
                                     if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
