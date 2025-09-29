@@ -202,6 +202,9 @@ with tab1:
                 key=f"name_{filename}"
             )
         #TODO: document avoid duplicate names, move to visualization tab etc. 
+    # Notify user to change tab
+    st.info("After uploading files and setting custom names, please switch to the 'Visualization & Export' tab.")
+
 with tab2:
     # Load data from session state
     data_dict = st.session_state.get('data_dict', {})
@@ -261,7 +264,7 @@ with tab2:
                 data_dict, custom_names, x_data_dict, 
                 st.session_state.plot_configs, 
                 external_label=external_label, 
-                custom_legend=custom_legend
+                custom_legend=custom_legend,
                 suptitle_enabled=st.toggle("Enable common title?", value=True),
                 suptitle=st.input("Common Title", value="Formulation") if st.toggle("Enable common title?", value=True), 
                 supaxes_enabled=st.toggle("Enable common axis labels?", value=True),
