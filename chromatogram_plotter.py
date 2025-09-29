@@ -57,8 +57,8 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
         for ax in axs:
             ax.set_xlabel("Time (min)")
             ax.set_ylabel("Intensity (mAU)")
-            ax.set_xticklabels(ax[0].get_xticklabels(), rotation=0, ha='center')
-            ax.set_yticklabels(ax[0].get_yticklabels(), rotation=0, va='center')
+            ax.set_xticklabels(axs[0].get_xticklabels(), rotation=0, ha='center')
+            ax.set_yticklabels(axs[0].get_yticklabels(), rotation=0, va='center')
     
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
