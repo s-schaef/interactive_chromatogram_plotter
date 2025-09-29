@@ -2,16 +2,22 @@ import io
 import math
 import pandas as pd
 import streamlit as st
-from itertools import cycle
-import matplotlib.pyplot as plt
+# from itertools import cycle
+# import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+#from matplotlib import colors as mcolors
+
 
 ### Function definitions ###
 
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None,
                    suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=True):
     """Generate interactive Plotly plots based on configuration."""
+    # Get matplotlib default colors
+    mpl_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+                  '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+    
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
     
@@ -36,6 +42,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     )
     
     # Add traces to subplots
+    color_idx = 0
     for i, config in enumerate(valid_configs):
         row = (i // cols) + 1
         col = (i % cols) + 1
@@ -46,16 +53,17 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                     x=x_data_dict[filename],
                     y=data_dict[filename],
                     name=custom_names.get(filename, filename),
-                    line=dict(width=2),
+                    line=dict(width=2, color=mpl_colors[color_idx % len(mpl_colors)]),
                     showlegend=not external_label or i == 0,  # Show legend only once if external
                 )
                 fig.add_trace(trace, row=row, col=col)
+                color_idx += 1
     
     # Update layout
     fig.update_layout(
         title=suptitle if suptitle_enabled else None,
-        height=400 * rows,  # Adjust height based on number of rows
-        width=800 if cols < 3 else 1200,  # Adjust width based on number of columns
+        height=400 * rows,
+        width=800 if cols < 3 else 1200,
         showlegend=True,
         legend=dict(
             yanchor="middle",
@@ -63,7 +71,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
             xanchor="right" if external_label else "left",
             x=1.15 if external_label else 1.02
         ),
-        clickmode='event+select'  # Enable clicking on traces
+        clickmode='event+select'
     )
     
     # Update axes labels if common axes are enabled
@@ -71,15 +79,48 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
         fig.update_xaxes(title_text="Time (min)")
         fig.update_yaxes(title_text="Intensity (mAU)")
     
-    # Add interactivity with custom JavaScript
+    # Add color picker buttons for each trace
+    buttons = []
+    for i in range(len(fig.data)):
+        buttons.append(
+            dict(
+                args=[{"line.color": [[None] * i + [f"{{colorPicker}}"] + [None] * (len(fig.data) - i - 1)]}],
+                label=f"Change color: {fig.data[i].name}",
+                method="restyle",
+                name=f"color_{i}",
+                type="colorPicker",
+                value=fig.data[i].line.color
+            )
+        )
+    
+    # Add the color picker menu
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                buttons=buttons,
+                direction="down",
+                showactive=True,
+                x=0,
+                y=1.1,
+                xanchor="left",
+                yanchor="top",
+            )
+        ]
+    )
+    
+    # Add hover template
     fig.update_traces(
         hovertemplate="Time: %{x:.2f}<br>Intensity: %{y:.2f}<extra></extra>",
-        # Enable trace selection
-        selected=dict(marker=dict(size=10)),
-        unselected=dict(marker=dict(opacity=0.5))
+    )
+    
+    # Disable zoom
+    fig.update_layout(
+        xaxis=dict(fixedrange=True),
+        yaxis=dict(fixedrange=True)
     )
     
     return fig
+
 def process_txt_file(uploaded_file):
     """Process a Chromelion exported .txt file."""
     if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
@@ -442,45 +483,3 @@ elif st.session_state.current_page == 'visualization':
                 st.info("Please select files for at least one plot to generate visualizations.")
         else:
             st.info("Click 'Add Plot' to start creating visualizations.")
-
-# # Sidebar with instructions
-# with st.sidebar:
-#     st.header("Instructions")
-    
-#     if st.session_state.current_page == 'data_upload':
-#         st.markdown("""
-#         ### Data Upload Page
-        
-#         1. **Upload CSV (Optional)**: Load previously exported data
-#         2. **Upload TXT Files**: Select Chromelion .txt files
-#         3. **Customize Names**: Edit sample names for clarity
-#         4. **Navigate**: Click 'Next' to proceed to visualization
-        
-#         **File Requirements:**
-#         - Chromelion exported .txt files
-#         - Files < 200MB
-#         - Tab-delimited format
-#         """)
-#     else:
-#         st.markdown("""
-#         ### Visualization Page
-        
-#         1. **Add Plots**: Create multiple plot panels
-#         2. **Configure**: Select files for each plot
-#         3. **Customize**: Adjust titles and legends
-#         4. **Export**: Download plots or data
-        
-#         **Export Formats:**
-#         - PNG (high-resolution raster)
-#         - PDF/SVG (vector graphics)
-#         - CSV (processed data)
-#         """)
-    
-#     st.divider()
-#     st.markdown("""
-#     **Chromatogram Plotter v1.1**  
-#     *Improved navigation and UI*  
-    
-#     Developed by Stefan Schaefer  
-#     2025
-#     """)
