@@ -388,18 +388,22 @@ elif st.session_state.current_page == 'visualization':
                         )
 
                     with col2:
+                        color_cycler = MatplotlibColorCycler()
                         # select files to plot from checkbox list
-                        for option in list(data_dict.keys()):
-                            if option not in config['files']:
-                                if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
-                                    config['files'].append(option)
-                                    # ask for custom color to be later used in the plot
-                                    st.color_picker("Pick a color (optional)", key=f"color_{i}_{option}")
-                                    
-                            else:
-                                if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
-                                    config['files'].remove(option)
-                        
+                        col21, col22 = st.columns([5,1])
+                        with col21:
+                            for option in list(data_dict.keys()):
+                                if option not in config['files']:
+                                    if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
+                                        config['files'].append(option)
+                                        with col22:
+                                            # ask for custom color to be later used in the plot
+                                            st.color_picker("Pick a color (optional)", value=color_cycler ,key=f"color_{i}_{option}, size=10, ")
+                                        
+                                else:
+                                    if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
+                                        config['files'].remove(option)
+                            
 
 
                     with col3:
