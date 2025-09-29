@@ -372,6 +372,8 @@ elif st.session_state.current_page == 'visualization':
         if st.session_state.plot_configs:
             for i, config in enumerate(st.session_state.plot_configs):
                 with st.expander(f"Plot {i+1} Configuration", expanded=True):
+                    color_cycler = MatplotlibColorCycler()
+
                     col1, col2, col3 = st.columns([2, 7, 1, ])
                     with col1:
                         config['title'] = st.text_input(
@@ -381,7 +383,6 @@ elif st.session_state.current_page == 'visualization':
                         )
 
                     with col2:
-                        color_cycler = MatplotlibColorCycler()
                         # select files to plot from checkbox list
                         col21, col22 = st.columns([5,1])
                         with col21:
@@ -391,7 +392,7 @@ elif st.session_state.current_page == 'visualization':
                                         config['files'].append(option)
                                         with col22:
                                             # ask for custom color to be later used in the plot
-                                            st.color_picker("Pick a color (optional)", value=next(color_cycler) ,key=f"color_{i}_{option}, size=10, ")
+                                            st.color_picker("Pick a color (optional)", value=next(color_cycler) ,key=f"color_{i}_{option}, size=5, ")
                                         
                                 else:
                                     if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
