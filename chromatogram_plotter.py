@@ -50,45 +50,36 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
         ax.set_title(config['title'])
     if suptitle_enabled:
         fig.suptitle(suptitle, fontsize=16)
+        
     if supaxes_enabled:
         fig.supxlabel("Time (min)")
         fig.supylabel("Intensity (mAU)")
     else:
-        # get global x and y limits
-        all_xlims = [ax.get_xlim() for ax in axs if ax.get_visible()]
-        all_ylims = [ax.get_ylim() for ax in axs if ax.get_visible()] 
-        st.text(f"X limits: {all_xlims}")
-        st.text(f"Y limits: {all_ylims}")  
-        x_min = min(lim[0] for lim in all_xlims)
-        x_max = max(lim[1] for lim in all_xlims)
-        y_min = min(lim[0] for lim in all_ylims)
-        y_max = max(lim[1] for lim in all_ylims)        
-
-        for ax in axs:  
+        all_ylims = []
+        for ax in axs:
             if ax.get_visible():
                 ax.set_xlabel("Time (min)")
                 ax.set_ylabel("Intensity (mAU)")
-                ax.set_xlim(x_min, x_max)
-                ax.set_ylim(y_min, y_max)
-        # Previous simpler version without consistent limits    
-
-
-
-        # all_xlims = [ax.get_xlim() for ax in axs if ax.get_visible()]
-        # all_ylims = [ax.get_ylim() for ax in axs if ax.get_visible()]
+                
+                # Plot the data for this axis
+                for filename in ax.get_lines():
+                    if filename.get_label() in data_dict:
+                        ax.plot(x_data_dict[filename.get_label()], data_dict[filename.get_label()])
+                
+                # Update limits based on the plotted data
+                ax.relim()
+                ax.autoscale_view()
+                
+                all_ylims.append(ax.get_ylim())
         
-        # # Set consistent limits across all axes
-        # x_min = min(lim[0] for lim in all_xlims)
-        # x_max = max(lim[1] for lim in all_xlims)
-        # y_min = min(lim[0] for lim in all_ylims)
-        # y_max = max(lim[1] for lim in all_ylims)
-        
-        # for ax in axs:
-        #     if ax.get_visible():
-        #         ax.set_xlabel("Time (min)")
-        #         ax.set_ylabel("Intensity (mAU)")
-        #         ax.set_xlim(x_min, x_max)
-        #         ax.set_ylim(y_min, y_max)
+        # Now set consistent y-limits across all axes
+        if all_ylims:
+            y_min = min(lim[0] for lim in all_ylims)
+            y_max = max(lim[1] for lim in all_ylims)
+            for ax in axs:
+                if ax.get_visible():
+                    ax.set_ylim(y_min, y_max)
+
     
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
