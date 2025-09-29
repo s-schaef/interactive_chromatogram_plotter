@@ -105,15 +105,15 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
-    elif external_label and not custom_legend:
-        # Use custom names for external legend
-        unique_files = []
-        for config in valid_configs:
-            for filename in config['files']:
-                if filename not in unique_files:
-                    unique_files.append(filename)
-        labels = [custom_names.get(f, f) for f in unique_files]
-        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+    # elif external_label and not custom_legend:
+    #     # Use custom names for external legend
+    #     unique_files = []
+    #     for config in valid_configs:
+    #         for filename in config['files']:
+    #             if filename not in unique_files:
+    #                 unique_files.append(filename)
+    #     labels = [custom_names.get(f, f) for f in unique_files]
+    #     fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
 
     plt.tight_layout()
     return fig
@@ -218,11 +218,11 @@ st.title("Chromatogram Plotter")
 # Navigation buttons at the top
 col1, col2 = st.columns(2)
 with col1:
-    st.button("📊 Data Upload", on_click=go_to_data_upload, 
+    st.button("Data Upload", on_click=go_to_data_upload, 
               type="primary" if st.session_state.current_page == 'data_upload' else "secondary",
               use_container_width=True)
 with col2:
-    st.button("📈 Visualization & Export", on_click=go_to_visualization,
+    st.button("Visualization & Export", on_click=go_to_visualization,
               type="primary" if st.session_state.current_page == 'visualization' else "secondary",
               use_container_width=True)
 
@@ -231,7 +231,7 @@ st.divider()
 # Display the appropriate page
 if st.session_state.current_page == 'data_upload':
     # PAGE 1: DATA UPLOAD
-    st.header("📊 Data Upload")
+    st.header("Data Upload")
     st.markdown("""
     Please upload one or more chromatogram files exported from Chromelion in .txt format.
     You can also upload a preexisting CSV file with the same structure (e.g., exported from this app),
@@ -251,7 +251,7 @@ if st.session_state.current_page == 'data_upload':
             st.session_state.data_dict.update(data_dict_csv)
             st.session_state.x_data_dict.update(x_data_dict_csv)
             st.session_state.custom_names.update(custom_names_csv)
-            st.success(f"✅ CSV file processed successfully. {len(data_dict_csv)} samples loaded.")
+            st.success(f"CSV file processed successfully. {len(data_dict_csv)} samples loaded.")
     
     # Upload new txt files    
     st.subheader("Upload Chromelion Files")
@@ -283,7 +283,7 @@ if st.session_state.current_page == 'data_upload':
             progress_bar.progress((idx + 1) / len(uploaded_txt_files))
         
         if new_files_count > 0:
-            st.success(f"✅ {new_files_count} new file(s) processed successfully.")
+            st.success(f"{new_files_count} new file(s) processed successfully.")
 
     # Custom names input
     if st.session_state.data_dict:
@@ -301,7 +301,7 @@ if st.session_state.current_page == 'data_upload':
                 default_value = default_names.get(filename, st.session_state.custom_names.get(filename, filename))
                 
                 st.session_state.custom_names[filename] = st.text_input(
-                    f"📄 {filename}",
+                    f"{filename}",
                     value=default_value,
                     key=f"name_{filename}"
                 )
@@ -309,7 +309,7 @@ if st.session_state.current_page == 'data_upload':
         # Check for duplicate custom names
         custom_names_list = list(st.session_state.custom_names.values())
         if len(custom_names_list) != len(set(custom_names_list)):
-            st.warning("⚠️ Warning: Duplicate custom names detected. Consider using unique names for clarity.")
+            st.warning("Warning: Duplicate custom names detected. Consider using unique names for clarity.")
     
     # Navigation section at the bottom
     st.divider()
@@ -322,13 +322,13 @@ if st.session_state.current_page == 'data_upload':
                      type="primary",
                      use_container_width=True)
         
-        st.success(f"📊 {len(st.session_state.data_dict)} file(s) ready for visualization.")
+        st.success(f"{len(st.session_state.data_dict)} file(s) ready for visualization.")
     else:
-        st.info("👆 Please upload chromatogram files to continue.")
+        st.info("Please upload chromatogram files to continue.")
 
 elif st.session_state.current_page == 'visualization':
     # PAGE 2: VISUALIZATION & EXPORT
-    st.header("📈 Visualization & Export")
+    st.header("Visualization & Export")
     
     # Check if data is available
     if not st.session_state.data_dict:
@@ -345,7 +345,7 @@ elif st.session_state.current_page == 'visualization':
         # Plot configuration section
         st.subheader("Plot Configuration")
         
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
+        col1, col2, col3, col4 = st.columns([1, 1, 2, 2])
         with col1:
             if st.button("➕ Add Plot", use_container_width=True):
                 st.session_state.plot_configs.append({'files': [], 'title': f'F{len(st.session_state.plot_configs)+1}'})
@@ -362,7 +362,7 @@ elif st.session_state.current_page == 'visualization':
         # Configure each plot
         if st.session_state.plot_configs:
             for i, config in enumerate(st.session_state.plot_configs):
-                with st.expander(f"📊 Plot {i+1} Configuration", expanded=True):
+                with st.expander(f"Plot {i+1} Configuration", expanded=True):
                     col1, col2, col3 = st.columns([2, 8, 1])
                     with col1:
                         config['title'] = st.text_input(
@@ -406,9 +406,9 @@ elif st.session_state.current_page == 'visualization':
                         custom_legend = None
                         if external_label:
                             custom_legend = st.text_area(
-                                "Custom Legend Text (one entry per line)", 
+                                "Custom Legend Text (one entry per line). Press STRG+ENTER to apply.", 
                                 height=100,
-                                help="Leave empty to use sample names"
+                                help="Leave empty to use sample names."
                             )
 
                 # Generate the plot
@@ -434,7 +434,7 @@ elif st.session_state.current_page == 'visualization':
                         fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
                         buf.seek(0)
                         st.download_button(
-                            label="📥 PNG (High-Res)",
+                            label="PNG",
                             data=buf.getvalue(),
                             file_name="chromatogram_plot.png",
                             mime="image/png",
@@ -446,7 +446,7 @@ elif st.session_state.current_page == 'visualization':
                         fig.savefig(buf_pdf, format="pdf", bbox_inches='tight')
                         buf_pdf.seek(0)
                         st.download_button(
-                            label="📥 PDF (Vector)",
+                            label="PDF",
                             data=buf_pdf.getvalue(),
                             file_name="chromatogram_plot.pdf",
                             mime="application/pdf",
@@ -458,7 +458,7 @@ elif st.session_state.current_page == 'visualization':
                         fig.savefig(buf_svg, format="svg", bbox_inches='tight')
                         buf_svg.seek(0)     
                         st.download_button(
-                            label="📥 SVG (Vector)",
+                            label="SVG",
                             data=buf_svg.getvalue(),
                             file_name="chromatogram_plot.svg",
                             mime="image/svg+xml",
@@ -468,55 +468,55 @@ elif st.session_state.current_page == 'visualization':
                     with col4:
                         csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
                         st.download_button(
-                            label="📥 Data (CSV)",
+                            label="Data (CSV)",
                             data=csv_data,
                             file_name="chromatogram_data.csv",
                             mime="text/csv",
                             use_container_width=True
                         )
             else:
-                st.info("👆 Please select files for at least one plot to generate visualizations.")
+                st.info("Please select files for at least one plot to generate visualizations.")
         else:
-            st.info("👆 Click 'Add Plot' to start creating visualizations.")
+            st.info("Click 'Add Plot' to start creating visualizations.")
 
-# Sidebar with instructions
-with st.sidebar:
-    st.header("📖 Instructions")
+# # Sidebar with instructions
+# with st.sidebar:
+#     st.header("Instructions")
     
-    if st.session_state.current_page == 'data_upload':
-        st.markdown("""
-        ### Data Upload Page
+#     if st.session_state.current_page == 'data_upload':
+#         st.markdown("""
+#         ### Data Upload Page
         
-        1. **Upload CSV (Optional)**: Load previously exported data
-        2. **Upload TXT Files**: Select Chromelion .txt files
-        3. **Customize Names**: Edit sample names for clarity
-        4. **Navigate**: Click 'Next' to proceed to visualization
+#         1. **Upload CSV (Optional)**: Load previously exported data
+#         2. **Upload TXT Files**: Select Chromelion .txt files
+#         3. **Customize Names**: Edit sample names for clarity
+#         4. **Navigate**: Click 'Next' to proceed to visualization
         
-        **File Requirements:**
-        - Chromelion exported .txt files
-        - Files < 200MB
-        - Tab-delimited format
-        """)
-    else:
-        st.markdown("""
-        ### Visualization Page
+#         **File Requirements:**
+#         - Chromelion exported .txt files
+#         - Files < 200MB
+#         - Tab-delimited format
+#         """)
+#     else:
+#         st.markdown("""
+#         ### Visualization Page
         
-        1. **Add Plots**: Create multiple plot panels
-        2. **Configure**: Select files for each plot
-        3. **Customize**: Adjust titles and legends
-        4. **Export**: Download plots or data
+#         1. **Add Plots**: Create multiple plot panels
+#         2. **Configure**: Select files for each plot
+#         3. **Customize**: Adjust titles and legends
+#         4. **Export**: Download plots or data
         
-        **Export Formats:**
-        - PNG (high-resolution raster)
-        - PDF/SVG (vector graphics)
-        - CSV (processed data)
-        """)
+#         **Export Formats:**
+#         - PNG (high-resolution raster)
+#         - PDF/SVG (vector graphics)
+#         - CSV (processed data)
+#         """)
     
-    st.divider()
-    st.markdown("""
-    **Chromatogram Plotter v2.0**  
-    *Improved navigation and UI*  
+#     st.divider()
+#     st.markdown("""
+#     **Chromatogram Plotter v1.1**  
+#     *Improved navigation and UI*  
     
-    Developed by Stefan Schaefer  
-    2025
-    """)
+#     Developed by Stefan Schaefer  
+#     2025
+#     """)
