@@ -2,22 +2,14 @@ import io
 import math
 import pandas as pd
 import streamlit as st
-# from itertools import cycle
-# import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-#from matplotlib import colors as mcolors
-
+from itertools import cycle
+import matplotlib.pyplot as plt
 
 ### Function definitions ###
 
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None,
                    suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=True):
-    """Generate interactive Plotly plots based on configuration."""
-    # Get matplotlib default colors
-    mpl_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
-                  '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-    
+    """Generate matplotlib plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
     
@@ -26,99 +18,107 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     
     # Handle subplot layout
     if len(valid_configs) in [1, 2, 3]:
-        rows, cols = 1, len(valid_configs)
+        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False)
     elif len(valid_configs) == 4:
-        rows, cols = 2, 2
+        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False)
     else:
-        rows = math.ceil(len(valid_configs)/3)
-        cols = 3
-    
-    # Create subplot figure
-    fig = make_subplots(
-        rows=rows, cols=cols,
-        subplot_titles=[config.get('title', f'Plot {i+1}') for i, config in enumerate(valid_configs)],
-        shared_xaxes=supaxes_enabled,
-        shared_yaxes=supaxes_enabled
-    )
-    
-    # Add traces to subplots
-    color_idx = 0
-    for i, config in enumerate(valid_configs):
-        row = (i // cols) + 1
-        col = (i % cols) + 1
+        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=False)
+    axs = axs.flat
+
+    # Remove unused axes for non-rectangular layouts
+    total_subplots = len(axs)
+    for i in range(len(valid_configs), total_subplots):
+        axs[i].set_visible(False)
         
-        for filename in config['files']:
-            if filename in data_dict:
-                trace = go.Scatter(
-                    x=x_data_dict[filename],
-                    y=data_dict[filename],
-                    name=custom_names.get(filename, filename),
-                    line=dict(width=2, color=mpl_colors[color_idx % len(mpl_colors)]),
-                    showlegend=not external_label or i == 0,  # Show legend only once if external
-                )
-                fig.add_trace(trace, row=row, col=col)
-                color_idx += 1
+    for i, config in enumerate(valid_configs):
+        ax = axs[i]
+        
+        if external_label: # and custom_legend:
+            for filename in config['files']:
+                if filename in data_dict:
+                    ax.plot(x_data_dict[filename], data_dict[filename],
+                            color=st.session_state.get(f"color_{i}_{filename}", None)  # Use custom color if provided
+                           )
+        else:
+            for filename in config['files']:
+                if filename in data_dict:
+                    ax.plot(
+                        x_data_dict[filename], 
+                        data_dict[filename], 
+                        label=custom_names.get(filename, filename),
+                        color=st.session_state.get(f"color_{i}_{filename}", None)  # Use custom color if provided
+                    )
+            # if config['files'] and not custom_legend:  # Only add legend if there are files
+            #     ax.legend(loc="upper left", fontsize='small')
+        
+        ax.set_title(config.get('title', f'Plot {i+1}'))
     
-    # Update layout
-    fig.update_layout(
-        title=suptitle if suptitle_enabled else None,
-        height=400 * rows,
-        width=800 if cols < 3 else 1200,
-        showlegend=True,
-        legend=dict(
-            yanchor="middle",
-            y=0.5,
-            xanchor="right" if external_label else "left",
-            x=1.15 if external_label else 1.02
-        ),
-        clickmode='event+select'
-    )
+    if suptitle_enabled and suptitle:
+        fig.suptitle(suptitle, fontsize=16)
     
-    # Update axes labels if common axes are enabled
     if supaxes_enabled:
-        fig.update_xaxes(title_text="Time (min)")
-        fig.update_yaxes(title_text="Intensity (mAU)")
+        fig.supxlabel("Time (min)")
+        fig.supylabel("Intensity (mAU)")
+        
+        # Determine the layout shape
+        if len(valid_configs) in [1, 2, 3]:
+            rows, cols = 1, len(valid_configs)
+        elif len(valid_configs) == 4:
+            rows, cols = 2, 2
+        else:
+            rows, cols = math.ceil(len(valid_configs)/3), 3
+        
+        # Hide tick labels for non-edge axes
+        for i, ax in enumerate(axs[:len(valid_configs)]):
+            if not ax.get_visible():
+                continue
+                
+            # Calculate row and column position
+            row = i // cols
+            col = i % cols
+            
+            # Only show y-tick labels for leftmost axes
+            if col > 0:
+                ax.tick_params(axis='y', labelleft=False)
+            
+            # Only show x-tick labels for bottom axes
+            if row < (rows - 1):
+                ax.tick_params(axis='x', labelbottom=False)
+    else:
+        all_ylims = []
+        for ax in axs:
+            if ax.get_visible():
+                ax.set_xlabel("Time (min)")
+                ax.set_ylabel("Intensity (mAU)")
+                
+                # Update limits based on the plotted data
+                ax.relim()
+                ax.autoscale_view()
+                
+                all_ylims.append(ax.get_ylim())
+        
+        # Now set consistent y-limits across all axes
+        if all_ylims:
+            y_min = min(lim[0] for lim in all_ylims)
+            y_max = max(lim[1] for lim in all_ylims)
+            for ax in axs:
+                if ax.get_visible():
+                    ax.set_ylim(y_min, y_max)
     
-    # Add color picker buttons for each trace
-    buttons = []
-    for i in range(len(fig.data)):
-        buttons.append(
-            dict(
-                args=[{"line.color": [[None] * i + [f"{{colorPicker}}"] + [None] * (len(fig.data) - i - 1)]}],
-                label=f"Change color: {fig.data[i].name}",
-                method="restyle",
-                name=f"color_{i}",
-                type="colorPicker",
-                value=fig.data[i].line.color
-            )
-        )
-    
-    # Add the color picker menu
-    fig.update_layout(
-        updatemenus=[
-            dict(
-                buttons=buttons,
-                direction="down",
-                showactive=True,
-                x=0,
-                y=1.1,
-                xanchor="left",
-                yanchor="top",
-            )
-        ]
-    )
-    
-    # Add hover template
-    fig.update_traces(
-        hovertemplate="Time: %{x:.2f}<br>Intensity: %{y:.2f}<extra></extra>",
-    )
-    
-    # Disable zoom
-    fig.update_layout(
-        xaxis=dict(fixedrange=True),
-        yaxis=dict(fixedrange=True)
-    )
-    
+    if external_label and custom_legend:
+        labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
+        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+    elif external_label and not custom_legend:
+        # Use custom names for external legend
+        unique_files = []
+        for config in valid_configs:
+            for filename in config['files']:
+                if filename not in unique_files:
+                    unique_files.append(filename)
+        labels = [custom_names.get(f, f) for f in unique_files]
+        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+    plt.tight_layout()
     return fig
 
 def process_txt_file(uploaded_file):
@@ -190,6 +190,18 @@ def get_csv_download_data(data_dict, custom_names, x_data_dict):
     output.seek(0)
     return output.getvalue()
 
+### Color cycle iterator ###
+class MatplotlibColorCycler:
+    """Iterator that cycles through matplotlib's default colors."""
+    
+    def __init__(self):
+        # Get the default matplotlib color cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        self.colors = cycle(prop_cycle.by_key()['color'])
+    
+    def __iter__(self):
+        return self
+    
 
 ### Main Application ###
 
@@ -319,7 +331,7 @@ if st.session_state.current_page == 'data_upload':
     st.divider()
     
     if st.session_state.data_dict:
-        col1, col2, col3 = st.columns([2, 1, 2])
+        col1, col2, col3 = st.columns([2, 4, 2])
         with col2:
             st.button("Next: Visualization & Export →", 
                      on_click=go_to_visualization,
@@ -367,7 +379,7 @@ elif st.session_state.current_page == 'visualization':
         if st.session_state.plot_configs:
             for i, config in enumerate(st.session_state.plot_configs):
                 with st.expander(f"Plot {i+1} Configuration", expanded=True):
-                    col1, col2, col3 = st.columns([2, 8, 1])
+                    col1, col2, col3 = st.columns([2, 7, 1, ])
                     with col1:
                         config['title'] = st.text_input(
                             "Plot Title", 
@@ -381,10 +393,15 @@ elif st.session_state.current_page == 'visualization':
                             if option not in config['files']:
                                 if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
                                     config['files'].append(option)
+                                    # ask for custom color to be later used in the plot
+                                    st.color_picker("Pick a color (optional)", key=f"color_{i}_{option}")
+                                    
                             else:
                                 if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
                                     config['files'].remove(option)
-                    
+                        
+
+
                     with col3:
                         if st.button("🗑️", key=f"remove_{i}", help="Remove this plot"):
                             st.session_state.plot_configs.pop(i)
@@ -428,7 +445,7 @@ elif st.session_state.current_page == 'visualization':
                 )
                 
                 if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.pyplot(fig)
                     
                     # Download options
                     st.subheader("Download Options")
@@ -483,3 +500,45 @@ elif st.session_state.current_page == 'visualization':
                 st.info("Please select files for at least one plot to generate visualizations.")
         else:
             st.info("Click 'Add Plot' to start creating visualizations.")
+
+# # Sidebar with instructions
+# with st.sidebar:
+#     st.header("Instructions")
+    
+#     if st.session_state.current_page == 'data_upload':
+#         st.markdown("""
+#         ### Data Upload Page
+        
+#         1. **Upload CSV (Optional)**: Load previously exported data
+#         2. **Upload TXT Files**: Select Chromelion .txt files
+#         3. **Customize Names**: Edit sample names for clarity
+#         4. **Navigate**: Click 'Next' to proceed to visualization
+        
+#         **File Requirements:**
+#         - Chromelion exported .txt files
+#         - Files < 200MB
+#         - Tab-delimited format
+#         """)
+#     else:
+#         st.markdown("""
+#         ### Visualization Page
+        
+#         1. **Add Plots**: Create multiple plot panels
+#         2. **Configure**: Select files for each plot
+#         3. **Customize**: Adjust titles and legends
+#         4. **Export**: Download plots or data
+        
+#         **Export Formats:**
+#         - PNG (high-resolution raster)
+#         - PDF/SVG (vector graphics)
+#         - CSV (processed data)
+#         """)
+    
+#     st.divider()
+#     st.markdown("""
+#     **Chromatogram Plotter v1.1**  
+#     *Improved navigation and UI*  
+    
+#     Developed by Stefan Schaefer  
+#     2025
+#     """)
