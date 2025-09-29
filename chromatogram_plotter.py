@@ -372,12 +372,16 @@ elif st.session_state.current_page == 'visualization':
                         )
 
                     with col2:
+                        def on_change():
+                            st.write(f"Selected options: {selected_options}")
+                        
                         config['files'] = st.multiselect(
                             "Select files to plot", 
                             options=list(data_dict.keys()),
                             default=config.get('files', []),
                             format_func=lambda x: custom_names.get(x, x),
-                            key=f"plot_{i}"
+                            key=f"plot_{i}",
+                            on_change=on_change(),
                         )
                     
                     with col3:
