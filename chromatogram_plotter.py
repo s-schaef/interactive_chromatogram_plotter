@@ -45,7 +45,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                         data_dict[filename], 
                         label=custom_names.get(filename, filename)
                     )
-            if config['files']:  # Only add legend if there are files
+            if config['files'] and not custom_legend:  # Only add legend if there are files
                 ax.legend(loc="upper left", fontsize='small')
         
         ax.set_title(config.get('title', f'Plot {i+1}'))
@@ -102,18 +102,18 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                 if ax.get_visible():
                     ax.set_ylim(y_min, y_max)
     
-    if external_label: # and custom_legend:
+    if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
-    # elif external_label and not custom_legend:
-    #     # Use custom names for external legend
-    #     unique_files = []
-    #     for config in valid_configs:
-    #         for filename in config['files']:
-    #             if filename not in unique_files:
-    #                 unique_files.append(filename)
-    #     labels = [custom_names.get(f, f) for f in unique_files]
-    #     fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+    elif external_label and not custom_legend:
+        # Use custom names for external legend
+        unique_files = []
+        for config in valid_configs:
+            for filename in config['files']:
+                if filename not in unique_files:
+                    unique_files.append(filename)
+        labels = [custom_names.get(f, f) for f in unique_files]
+        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
 
     plt.tight_layout()
     return fig
