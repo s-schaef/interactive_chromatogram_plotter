@@ -261,16 +261,19 @@ if st.session_state.current_page == 'data_upload':
             if error:
                 st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
             else:
-                for entry_key in data_dict_csv.keys():
+                for entry_key, entry_value in data_dict_csv.items():
                     # Check if file already exists
-                    if custom_names_csv[entry_key] not in st.session_state.custom_names.values():
+                    current_custom_name = custom_names_csv[entry_key]
+                    
+                    if current_custom_name not in st.session_state.custom_names.values():
                         new_csv_files_count += 1
-                    else: # throw a warning
-                        st.warning(f"Entry with name {custom_names_csv[entry_key]} from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
+                    else:
+                        st.warning(f"Custom name {current_custom_name} from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
 
-                    st.session_state.data_dict.update(data_dict_csv[entry_key])
-                    st.session_state.x_data_dict.update(x_data_dict_csv[entry_key])
-                    st.session_state.custom_names.update(custom_names_csv[entry_key])
+                    # Direct assignment instead of update
+                    st.session_state.data_dict[entry_key] = entry_value
+                    st.session_state.x_data_dict[entry_key] = x_data_dict_csv[entry_key]
+                    st.session_state.custom_names[entry_key] = current_custom_name
                 st.success(f"CSV file {uploaded_csv.name} processed successfully. {new_csv_files_count} samples loaded.")
             progress_bar_csv.progress((idx + 1) / new_csv_files_count)
 
