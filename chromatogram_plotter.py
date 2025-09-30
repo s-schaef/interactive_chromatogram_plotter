@@ -299,6 +299,7 @@ if st.session_state.current_page == 'data_upload':
                     st.session_state.data_dict.pop(entry, None)
                     st.session_state.x_data_dict.pop(entry, None)
                     st.session_state.custom_names.pop(entry, None)
+                    st.warning(f"Entry '{entry}' from CSV file {uploaded_csv.name} was uploaded twice. Latest uploaded entry will be used.")
                 
                 # Reset the entries list for this file
                 st.session_state.csv_file_entries[uploaded_csv.name] = []
