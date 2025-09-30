@@ -296,14 +296,19 @@ if st.session_state.current_page == 'data_upload':
         st.session_state.custom_names = {}
         st.experimental_rerun()  # Rerun to reset the uploader
         st.success("All uploaded data cleared.")
-    
+
     # Process uploaded txt files
     default_names = {}
     new_files_count = 0
 
+    # Track current files to detect removals
+    current_files = set()
+
     if uploaded_txt_files:
         progress_bar = st.progress(0)
         for idx, file in enumerate(uploaded_txt_files):
+            current_files.add(file.name)  # Track this file as currently present
+            
             df, default_name, error = process_txt_file(file)
             if error:
                 st.error(f"Error in file {file.name}: {error}")
@@ -312,7 +317,7 @@ if st.session_state.current_page == 'data_upload':
                 if file.name not in st.session_state.data_dict:
                     new_files_count += 1
                 else: # throw a warning
-                    st.warning(f"File {file.name} was already more than once. Last upload will overwrite previous data.")
+                    st.warning(f"File {file.name} was uploaded more than once. Last upload will overwrite previous data.")
                 
                 st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
                 st.session_state.data_dict[file.name] = df.iloc[:, 1]
@@ -321,12 +326,24 @@ if st.session_state.current_page == 'data_upload':
                 # Initialize custom name if not present
                 if file.name not in st.session_state.custom_names:
                     st.session_state.custom_names[file.name] = default_name or file.name
-
             
             progress_bar.progress((idx + 1) / len(uploaded_txt_files))
         
         if new_files_count > 0:
             st.success(f"{new_files_count} new file(s) processed successfully.")
+
+    # Clean up removed files
+    if hasattr(st.session_state, 'data_dict'):
+        files_to_remove = []
+        for filename in st.session_state.data_dict.keys():
+            if filename not in current_files:
+                files_to_remove.append(filename)
+        
+        for filename in files_to_remove:
+            # Remove data for files that were deleted via the "x" button
+            st.session_state.data_dict.pop(filename, None)
+            st.session_state.x_data_dict.pop(filename, None)
+            st.session_state.custom_names.pop(filename, None)
 
     # Custom names input
     if st.session_state.data_dict:
