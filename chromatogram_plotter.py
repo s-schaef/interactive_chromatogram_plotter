@@ -526,6 +526,20 @@ elif st.session_state.current_page == 'visualization':
                             mime="text/csv",
                             use_container_width=True
                         )
+                elif len(list(data_dict)) > 0: # csv can already be downloaded
+                    st.subheader("Download Options")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col4:
+                        csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
+                        st.download_button(
+                            label="Data (CSV)",
+                            data=csv_data,
+                            file_name="chromatogram_data.csv",
+                            mime="text/csv",
+                            use_container_width=True
+                        )
+                    
+
             else:
                 st.info("Please select files for at least one plot to generate visualizations.")
         else:
