@@ -201,16 +201,18 @@ def MatplotlibColorCycler(): #TODO: colors are reset for each new data entry, sh
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
 
-# Initialize session state via function
-def init_session_state():
+# Initialize session state
+if 'data_dict' not in st.session_state:
     st.session_state.data_dict = {}
-    st.session_state.x_data_dict = {}
+if 'x_data_dict' not in st.session_state:
+    st.session_state.x_data_dict = {}       
+if 'custom_names' not in st.session_state:
     st.session_state.custom_names = {}
+if 'current_page' not in st.session_state:
     st.session_state.current_page = 'data_upload'
+if 'plot_configs' not in st.session_state:
     st.session_state.plot_configs = []  # List of dicts, each dict contains 'files' and 'title'
-init_session_state()    
-
-
+    
 
 # Page navigation functions
 def go_to_data_upload():
@@ -247,7 +249,9 @@ if st.session_state.current_page == 'data_upload':
     # File upload section
     # Upload preexisting CSV file 
     st.subheader("Optional: Upload Existing CSV")
-    uploaded_csv = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True)
+    if "csv_uploader_key" not in st.session_state:
+        st.session_state["csv_uploader_key"] = 0  # Initialize key for CSV uploader
+    uploaded_csv = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
     if uploaded_csv:
         data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
         if error:
@@ -261,11 +265,14 @@ if st.session_state.current_page == 'data_upload':
     
     # Upload new txt files    
     st.subheader("Upload Chromelion Files")
-    uploaded_txt_files = st.file_uploader("Upload your .txt files", accept_multiple_files=True, type=['txt'])
+    if "txt_uploader_key" not in st.session_state:
+        st.session_state["txt_uploader_key"] = 0  # Initialize key for txt uploader
+    uploaded_txt_files = st.file_uploader("Upload your .txt files", accept_multiple_files=True, type=['txt'], key=st.session_state["txt_uploader_key"])
 
     # delete all  data
     if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
-        init_session_state()
+        st.sesssion_state["txt_uploader_key"] += 1  # Change key to reset uploader
+        st.experimental_rerun()  # Rerun to reset the uploader
         st.success("All uploaded data cleared.")
     
     # Process uploaded txt files
