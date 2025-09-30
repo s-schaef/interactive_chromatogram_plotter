@@ -242,14 +242,13 @@ if st.session_state.current_page == 'data_upload':
     st.header("Data Upload")
     st.markdown("""
     Please upload one or more chromatogram files exported from Chromelion in .txt format.
-    You can also upload a preexisting CSV file with the same structure (e.g., exported from this app),
-    to continue working on it or to add data into it.
+    You can also upload preexisting CSV files exported from this app to continue working on it or to add new data into it.
     """)
 
     # File upload section
     # Upload preexisting CSV file 
     st.subheader("Optional: Upload Existing CSV")
-    uploaded_csv = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'])
+    uploaded_csv = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True)
     if uploaded_csv:
         data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
         if error:
@@ -264,6 +263,13 @@ if st.session_state.current_page == 'data_upload':
     # Upload new txt files    
     st.subheader("Upload Chromelion Files")
     uploaded_txt_files = st.file_uploader("Upload your .txt files", accept_multiple_files=True, type=['txt'])
+
+    # delete all  data
+    if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names, but keep the current plots."):
+        st.session_state.data_dict = {}
+        st.session_state.x_data_dict = {}
+        st.session_state.custom_names = {}
+        st.success("All uploaded data cleared.")
     
     # Process uploaded txt files
     default_names = {}
@@ -306,14 +312,24 @@ if st.session_state.current_page == 'data_upload':
         for idx, filename in enumerate(st.session_state.data_dict.keys()):
             col = cols[idx % num_cols]
             with col:
-                # Get default name from default_names or use existing custom name
-                default_value = default_names.get(filename, st.session_state.custom_names.get(filename, filename))
-                
-                st.session_state.custom_names[filename] = st.text_input(
-                    f"{filename}",
-                    value=default_value,
-                    key=f"name_{filename}"
-                )
+                subcol1, subcol2 = st.columns([7, 1])
+                with subcol1:
+                    # Get default name from default_names or use existing custom name
+                    default_value = default_names.get(filename, st.session_state.custom_names.get(filename, filename))
+                    
+                    st.session_state.custom_names[filename] = st.text_input(
+                        f"{filename}",
+                        value=default_value,
+                        key=f"name_{filename}"
+                    )
+                with subcol2:
+                    # delete data entry
+                    if st.button("🗑️", key=f"del_{filename}", help="Remove this sample and its data"):
+                        st.session_state.data_dict.pop(filename, None)
+                        st.session_state.x_data_dict.pop(filename, None)
+                        st.session_state.custom_names.pop(filename, None)
+                        st.success(f"Sample '{filename}' removed.")
+                        st.experimental_rerun()
         
         # Check for duplicate custom names
         custom_names_list = list(st.session_state.custom_names.values())
