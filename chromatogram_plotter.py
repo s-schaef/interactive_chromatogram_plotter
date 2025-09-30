@@ -420,13 +420,13 @@ elif st.session_state.current_page == 'visualization':
                 with st.expander("⚙️ Plot Options", expanded=False):
                     col1, col2 = st.columns(2)
                     with col1:
-                        suptitle_enabled = st.toggle("Enable common title", value=True)
+                        suptitle_enabled = st.toggle("Disable common title", value=False)
                         if suptitle_enabled:
-                            suptitle = st.text_input("Common Title", value="Formulation")
+                            suptitle = st.text_input("Common Title (Press ENTER to confirm)", value="Formulation")
                         else:
                             suptitle = ""
                         
-                        supaxes_enabled = st.toggle("Enable common axis labels", value=True)
+                        supaxes_enabled = st.toggle("Disable common axis labels", value=False)
                     
                     with col2:
                         external_label = st.toggle("Enable external legend")
@@ -450,7 +450,7 @@ elif st.session_state.current_page == 'visualization':
                 )
                 
                 if fig:
-                    st.pyplot(fig)
+                    st.pyplot(fig, width="content")
                     
                     # Download options
                     st.subheader("Download Options")
