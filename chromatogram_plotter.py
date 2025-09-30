@@ -250,7 +250,7 @@ if st.session_state.current_page == 'data_upload':
     # Upload preexisting CSV file 
     st.subheader("Optional: Upload Existing CSV")
     if "csv_uploader_key" not in st.session_state:
-        st.session_state["csv_uploader_key"] = 0  # Initialize key for CSV uploader
+        st.session_state["csv_uploader_key"] = f"csv{0}"  # Initialize key for CSV uploader
     uploaded_csv = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
     if uploaded_csv:
         data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
@@ -266,12 +266,13 @@ if st.session_state.current_page == 'data_upload':
     # Upload new txt files    
     st.subheader("Upload Chromelion Files")
     if "txt_uploader_key" not in st.session_state:
-        st.session_state["txt_uploader_key"] = 0  # Initialize key for txt uploader
+        st.session_state["txt_uploader_key"] = f"txt{0}"  # Initialize key for txt uploader
     uploaded_txt_files = st.file_uploader("Upload your .txt files", accept_multiple_files=True, type=['txt'], key=st.session_state["txt_uploader_key"])
 
     # delete all  data
     if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
-        st.sesssion_state["txt_uploader_key"] += 1  # Change key to reset uploader
+        st.session_state["txt_uploader_key"] = f"txt{st.session_state["txt_uploader_key"]+1}"  # Change key to reset uploader
+        st.session_state["csv_uploader_key"] = f"csv{st.session_state["csv_uploader_key"]+1}"  # Change key to reset uploader
         st.experimental_rerun()  # Rerun to reset the uploader
         st.success("All uploaded data cleared.")
     
