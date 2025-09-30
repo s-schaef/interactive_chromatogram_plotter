@@ -253,10 +253,11 @@ if st.session_state.current_page == 'data_upload':
     if "csv_uploader_key" not in st.session_state:
         st.session_state["csv_uploader_key"] = 10000  # Initialize key for CSV uploader
     uploaded_csv_files = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
-    new_csv_files_count = 0
+ 
     if uploaded_csv_files:
         progress_bar_csv = st.progress(0)
         for idx, uploaded_csv in enumerate(uploaded_csv_files):
+            new_csv_files_count = 0
             data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
             if error:
                 st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
@@ -275,7 +276,7 @@ if st.session_state.current_page == 'data_upload':
                     st.session_state.x_data_dict[entry_key] = x_data_dict_csv[entry_key]
                     st.session_state.custom_names[entry_key] = current_custom_name
                 st.success(f"CSV file {uploaded_csv.name} processed successfully. {new_csv_files_count} samples loaded.")
-            progress_bar_csv.progress((idx + 1) / new_csv_files_count)
+            #progress_bar_csv.progress((idx + 1) / new_csv_files_count)
 
     
     # Upload new txt files    
@@ -539,21 +540,21 @@ elif st.session_state.current_page == 'visualization':
                             mime="text/csv",
                             use_container_width=True
                         )
-                else: # csv can already be downloaded
-                    st.subheader("Download Options")
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col4:
-                        csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
-                        st.download_button(
-                            label="Data (CSV)",
-                            data=csv_data,
-                            file_name="chromatogram_data.csv",
-                            mime="text/csv",
-                            use_container_width=True
-                        )
                     
 
             else:
                 st.info("Please select files for at least one plot to generate visualizations.")
         else:
             st.info("Click 'Add Plot' to start creating visualizations.")
+            
+            st.subheader("Download Options")
+            col1, col2, col3, col4 = st.columns(4)
+            with col4:
+                csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
+                st.download_button(
+                    label="Data (CSV)",
+                    data=csv_data,
+                    file_name="chromatogram_data.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
