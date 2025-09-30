@@ -253,6 +253,7 @@ if st.session_state.current_page == 'data_upload':
     if "csv_uploader_key" not in st.session_state:
         st.session_state["csv_uploader_key"] = 10000  # Initialize key for CSV uploader
     uploaded_csv_files = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
+    new_csv_files_count = 0
     if uploaded_csv_files:
         progress_bar_csv = st.progress(0)
         for idx, uploaded_csv in enumerate(uploaded_csv_files):
@@ -260,12 +261,20 @@ if st.session_state.current_page == 'data_upload':
             if error:
                 st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
             else:
-                # Merge with existing session state data
-                st.session_state.data_dict.update(data_dict_csv)
-                st.session_state.x_data_dict.update(x_data_dict_csv)
-                st.session_state.custom_names.update(custom_names_csv)
-                st.success(f"CSV file {uploaded_csv.name} processed successfully. {len(data_dict_csv)} samples loaded.")
-            progress_bar_csv.progress((idx + 1) / len(uploaded_csv_files))
+                for entry_id, entry in enumerate(data_dict_csv):
+                    if entry_id == 0:
+                        st.info(f"Note: CSV file {uploaded_csv.name} contains {len(data_dict_csv)} samples. They will be added to the existing data.")
+                    # Check if file already exists
+                    if custom_names_csv[entry_id] not in st.session_state.custom_names.values():
+                        new_csv_files_count += 1
+                    else: # throw a warning
+                        st.warning(f"Custom name {custom_names_csv[entry_id]} from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
+
+                    st.session_state.data_dict.update(data_dict_csv[entry_id])
+                    st.session_state.x_data_dict.update(x_data_dict_csv[entry_id])
+                    st.session_state.custom_names.update(custom_names_csv[entry_id])
+                st.success(f"CSV file {uploaded_csv.name} processed successfully. {new_csv_files_count} samples loaded.")
+            progress_bar_csv.progress((idx + 1) / new_csv_files_count)
 
     
     # Upload new txt files    
@@ -300,6 +309,8 @@ if st.session_state.current_page == 'data_upload':
                 # Check if file already exists
                 if file.name not in st.session_state.data_dict:
                     new_files_count += 1
+                else: # throw a warning
+                    st.warning(f"File {file.name} was already more than once. Last upload will overwrite previous data.")
                 
                 st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
                 st.session_state.data_dict[file.name] = df.iloc[:, 1]
@@ -308,6 +319,7 @@ if st.session_state.current_page == 'data_upload':
                 # Initialize custom name if not present
                 if file.name not in st.session_state.custom_names:
                     st.session_state.custom_names[file.name] = default_name or file.name
+
             
             progress_bar.progress((idx + 1) / len(uploaded_txt_files))
         
