@@ -48,6 +48,7 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                         label=custom_names.get(filename, filename),
                         color=st.session_state.get(f"color_{i}_{filename}", None)  # Use custom color if provided
                     )
+            ax.legend(loc="upper left", fontsize='small')
             # if config['files'] and not custom_legend:  # Only add legend if there are files
             #     ax.legend(loc="upper left", fontsize='small')
         
@@ -438,13 +439,13 @@ elif st.session_state.current_page == 'visualization':
                 with st.expander("⚙️ Plot Options", expanded=False):
                     col1, col2 = st.columns(2)
                     with col1:
-                        suptitle_enabled = st.toggle("Disable common title", value=False)
+                        suptitle_enabled = st.toggle("Enable common title", value=False)
                         if suptitle_enabled:
                             suptitle = st.text_input("Common Title (Press ENTER to confirm)", value="Formulation")
                         else:
                             suptitle = ""
                         
-                        supaxes_enabled = st.toggle("Disable common axis labels", value=False)
+                        supaxes_enabled = st.toggle("Enable common axis labels", value=False)
                     
                     with col2:
                         external_label = st.toggle("Enable external legend")
@@ -458,7 +459,9 @@ elif st.session_state.current_page == 'visualization':
 
                 # Generate the plot
                 fig = generate_plots(
-                    data_dict, custom_names, x_data_dict, 
+                    data_dict,
+                    custom_names, 
+                    x_data_dict, 
                     st.session_state.plot_configs, 
                     external_label=external_label, 
                     custom_legend=custom_legend,
