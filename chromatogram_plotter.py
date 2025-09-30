@@ -252,17 +252,21 @@ if st.session_state.current_page == 'data_upload':
     st.subheader("Optional: Upload Existing CSV")
     if "csv_uploader_key" not in st.session_state:
         st.session_state["csv_uploader_key"] = 10000  # Initialize key for CSV uploader
-    uploaded_csv = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
-    if uploaded_csv:
-        data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
-        if error:
-            st.error(f"Error in CSV file: {error}")
-        else:
-            # Merge with existing session state data
-            st.session_state.data_dict.update(data_dict_csv)
-            st.session_state.x_data_dict.update(x_data_dict_csv)
-            st.session_state.custom_names.update(custom_names_csv)
-            st.success(f"CSV file processed successfully. {len(data_dict_csv)} samples loaded.")
+    uploaded_csv_files = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
+    if uploaded_csv_files:
+        progress_bar_csv = st.progress(0)
+        for idx, uploaded_csv in enumerate(uploaded_csv_files):
+            data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
+            if error:
+                st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
+            else:
+                # Merge with existing session state data
+                st.session_state.data_dict.update(data_dict_csv)
+                st.session_state.x_data_dict.update(x_data_dict_csv)
+                st.session_state.custom_names.update(custom_names_csv)
+                st.success(f"CSV file {uploaded_csv.name} processed successfully. {len(data_dict_csv)} samples loaded.")
+            progress_bar_csv.progress((idx + 1) / len(uploaded_csv_files))
+
     
     # Upload new txt files    
     st.subheader("Upload Chromelion Files")
