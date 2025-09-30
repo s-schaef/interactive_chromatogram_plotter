@@ -201,17 +201,21 @@ def MatplotlibColorCycler(): #TODO: colors are reset for each new data entry, sh
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
 
-# Initialize session state
-if 'plot_configs' not in st.session_state:
-    st.session_state.plot_configs = []
-if 'data_dict' not in st.session_state:
-    st.session_state.data_dict = {}
-if 'x_data_dict' not in st.session_state:
-    st.session_state.x_data_dict = {}
-if 'custom_names' not in st.session_state:
-    st.session_state.custom_names = {}
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'data_upload'
+# Initialize session state via function
+def init_session_state():
+    if 'data_dict' not in st.session_state:
+        st.session_state.data_dict = {}
+    if 'x_data_dict' not in st.session_state:
+        st.session_state.x_data_dict = {}
+    if 'custom_names' not in st.session_state:
+        st.session_state.custom_names = {}
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'data_upload'
+    if 'plot_configs' not in st.session_state:
+        st.session_state.plot_configs = []  # List of dicts, each dict contains 'files' and 'title'
+init_session_state()    
+
+
 
 # Page navigation functions
 def go_to_data_upload():
@@ -265,10 +269,8 @@ if st.session_state.current_page == 'data_upload':
     uploaded_txt_files = st.file_uploader("Upload your .txt files", accept_multiple_files=True, type=['txt'])
 
     # delete all  data
-    if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names, but keep the current plots."):
-        st.session_state.data_dict = {}
-        st.session_state.x_data_dict = {}
-        st.session_state.custom_names = {}
+    if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
+        init_session_state()
         st.success("All uploaded data cleared.")
     
     # Process uploaded txt files
@@ -312,24 +314,16 @@ if st.session_state.current_page == 'data_upload':
         for idx, filename in enumerate(st.session_state.data_dict.keys()):
             col = cols[idx % num_cols]
             with col:
-                subcol1, subcol2 = st.columns([7, 1])
-                with subcol1:
-                    # Get default name from default_names or use existing custom name
-                    default_value = default_names.get(filename, st.session_state.custom_names.get(filename, filename))
-                    
-                    st.session_state.custom_names[filename] = st.text_input(
-                        f"{filename}",
-                        value=default_value,
-                        key=f"name_{filename}"
-                    )
-                with subcol2:
-                    # delete data entry
-                    if st.button("🗑️", key=f"del_{filename}", help="Remove this sample and its data"):
-                        st.session_state.data_dict.pop(filename, None)
-                        st.session_state.x_data_dict.pop(filename, None)
-                        st.session_state.custom_names.pop(filename, None)
-                        st.success(f"Sample '{filename}' removed.")
-                        st.experimental_rerun()
+                # Get default name from default_names or use existing custom name
+                default_value = default_names.get(filename, st.session_state.custom_names.get(filename, filename))
+                
+                st.session_state.custom_names[filename] = st.text_input(
+                    f"{filename}",
+                    value=default_value,
+                    key=f"name_{filename}"
+                )
+
+                        
         
         # Check for duplicate custom names
         custom_names_list = list(st.session_state.custom_names.values())
