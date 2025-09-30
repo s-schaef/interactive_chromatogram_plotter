@@ -274,6 +274,10 @@ if st.session_state.current_page == 'data_upload':
     if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
         st.session_state["txt_uploader_key"] += 1  # Change key to reset uploader
         st.session_state["csv_uploader_key"] += 1  # Change key to reset uploader
+        # also reset data and custom names
+        st.session_state.data_dict = {}
+        st.session_state.x_data_dict = {}
+        st.session_state.custom_names = {}
         st.experimental_rerun()  # Rerun to reset the uploader
         st.success("All uploaded data cleared.")
     
@@ -447,7 +451,7 @@ elif st.session_state.current_page == 'visualization':
                         custom_legend = None
                         if external_label:
                             custom_legend = st.text_area(
-                                "Custom Legend Text (one entry per line). Press STRG+ENTER to apply.", 
+                                "Each new line is one legend entry. This function is purely cosmetic. It overwrites the existing legend with anything you put in and must be used carefully. Press STRG+ENTER to apply.", 
                                 height=100,
                                 help="Leave empty to use sample names."
                             )
@@ -464,7 +468,7 @@ elif st.session_state.current_page == 'visualization':
                 )
                 
                 if fig:
-                    st.pyplot(fig, width="content")
+                    st.pyplot(fig)#, width="content")
                     
                     # Download options
                     st.subheader("Download Options")
