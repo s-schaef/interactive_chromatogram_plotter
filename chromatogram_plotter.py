@@ -262,10 +262,8 @@ if st.session_state.current_page == 'data_upload':
                 st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
             else:
                 for entry_id, entry in enumerate(data_dict_csv):
-                    if entry_id == 0:
-                        st.info(f"Note: CSV file {uploaded_csv.name} contains {len(data_dict_csv)} samples. They will be added to the existing data.")
                     # Check if file already exists
-                    if custom_names_csv[entry_id] not in st.session_state.custom_names.values():
+                    if entry not in st.session_state.data_dict:
                         new_csv_files_count += 1
                     else: # throw a warning
                         st.warning(f"Custom name {custom_names_csv[entry_id]} from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
@@ -538,7 +536,7 @@ elif st.session_state.current_page == 'visualization':
                             mime="text/csv",
                             use_container_width=True
                         )
-                elif len(list(data_dict)) > 0: # csv can already be downloaded
+                else: # csv can already be downloaded
                     st.subheader("Download Options")
                     col1, col2, col3, col4 = st.columns(4)
                     with col4:
