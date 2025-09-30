@@ -306,19 +306,47 @@ if st.session_state.current_page == 'data_upload':
 
     if uploaded_txt_files:
         progress_bar = st.progress(0)
-        for idx, file in enumerate(uploaded_txt_files):
-            current_files.add(file.name)  # Track this file as currently present
+        
+        # First, identify all current files
+        for file in uploaded_txt_files:
+            current_files.add(file.name)
+        
+        # Clean up removed files before processing new ones
+        files_to_remove = []
+        if hasattr(st.session_state, 'data_dict'):
+            for filename in st.session_state.data_dict.keys():
+                if filename not in current_files:
+                    files_to_remove.append(filename)
             
+            for filename in files_to_remove:
+                # Remove data for files that were deleted via the "x" button
+                st.session_state.data_dict.pop(filename, None)
+                st.session_state.x_data_dict.pop(filename, None)
+                st.session_state.custom_names.pop(filename, None)
+        
+        # Now process the uploaded files
+        for idx, file in enumerate(uploaded_txt_files):
             df, default_name, error = process_txt_file(file)
             if error:
                 st.error(f"Error in file {file.name}: {error}")
             else:
-                # Check if file already exists
-                if file.name not in st.session_state.data_dict:
-                    new_files_count += 1
-                else: # throw a warning
-                    st.warning(f"File {file.name} was uploaded more than once. Last upload will overwrite previous data.")
+                # Check if this is a new file in this session
+                is_new_file = True
                 
+                # If we're re-running the app and the file was already processed before
+                if file.name in st.session_state.data_dict:
+                    # Check if the content is the same (optional, can be complex)
+                    # For simplicity, we'll just assume it's a re-upload
+                    is_new_file = False
+                    # Remove the old data to avoid the warning
+                    st.session_state.data_dict.pop(file.name, None)
+                    st.session_state.x_data_dict.pop(file.name, None)
+                    # Keep the custom name if it exists
+                
+                if is_new_file:
+                    new_files_count += 1
+                
+                # Process the file
                 st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
                 st.session_state.data_dict[file.name] = df.iloc[:, 1]
                 default_names[file.name] = default_name or file.name
@@ -332,21 +360,8 @@ if st.session_state.current_page == 'data_upload':
         if new_files_count > 0:
             st.success(f"{new_files_count} new file(s) processed successfully.")
 
-    # Clean up removed files
-    if hasattr(st.session_state, 'data_dict'):
-        files_to_remove = []
-        for filename in st.session_state.data_dict.keys():
-            if filename not in current_files:
-                files_to_remove.append(filename)
-        
-        for filename in files_to_remove:
-            # Remove data for files that were deleted via the "x" button
-            st.session_state.data_dict.pop(filename, None)
-            st.session_state.x_data_dict.pop(filename, None)
-            st.session_state.custom_names.pop(filename, None)
-
     # Custom names input
-    if st.session_state.data_dict:
+    if hasattr(st.session_state, 'data_dict') and st.session_state.data_dict:
         st.subheader("Custom Sample Names")
         st.info("💡 Tip: Provide unique, descriptive names for each sample to make them easier to identify.\
                 A global legend that allows using the same names for different samples is available in the next step.")
