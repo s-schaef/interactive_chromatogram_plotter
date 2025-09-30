@@ -203,16 +203,11 @@ st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
 
 # Initialize session state via function
 def init_session_state():
-    if 'data_dict' not in st.session_state:
-        st.session_state.data_dict = {}
-    if 'x_data_dict' not in st.session_state:
-        st.session_state.x_data_dict = {}
-    if 'custom_names' not in st.session_state:
-        st.session_state.custom_names = {}
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = 'data_upload'
-    if 'plot_configs' not in st.session_state:
-        st.session_state.plot_configs = []  # List of dicts, each dict contains 'files' and 'title'
+    st.session_state.data_dict = {}
+    st.session_state.x_data_dict = {}
+    st.session_state.custom_names = {}
+    st.session_state.current_page = 'data_upload'
+    st.session_state.plot_configs = []  # List of dicts, each dict contains 'files' and 'title'
 init_session_state()    
 
 
