@@ -271,8 +271,8 @@ if st.session_state.current_page == 'data_upload':
 
     # delete all  data
     if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
-        st.session_state["txt_uploader_key"] = f"txt{st.session_state["txt_uploader_key"]+1}"  # Change key to reset uploader
-        st.session_state["csv_uploader_key"] = f"csv{st.session_state["csv_uploader_key"]+1}"  # Change key to reset uploader
+        st.session_state["txt_uploader_key"] = f"{st.session_state["txt_uploader_key"]}"+"1"  # Change key to reset uploader
+        st.session_state["csv_uploader_key"] = f"{st.session_state["csv_uploader_key"]}"+"1"  # Change key to reset uploader
         st.experimental_rerun()  # Rerun to reset the uploader
         st.success("All uploaded data cleared.")
     
