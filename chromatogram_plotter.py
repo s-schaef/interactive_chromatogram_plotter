@@ -213,6 +213,8 @@ if 'current_page' not in st.session_state:
     st.session_state.current_page = 'data_upload'
 if 'plot_configs' not in st.session_state:
     st.session_state.plot_configs = []  # List of dicts, each dict contains 'files' and 'title'
+if 'csv_file_entries' not in st.session_state:
+    st.session_state.csv_file_entries = {}
     
 
 # Page navigation functions
@@ -253,30 +255,78 @@ if st.session_state.current_page == 'data_upload':
     if "csv_uploader_key" not in st.session_state:
         st.session_state["csv_uploader_key"] = 10000  # Initialize key for CSV uploader
     uploaded_csv_files = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
- 
+
+    if 'csv_file_entries' not in st.session_state:
+        st.session_state.csv_file_entries = {}
+
+    # Track current CSV files to detect removals
+    current_csv_files = set()
     if uploaded_csv_files:
+        for file in uploaded_csv_files:
+            current_csv_files.add(file.name)
+        
+        # Clean up removed CSV files
+        files_to_remove = []
+        for csv_filename, entries in list(st.session_state.csv_file_entries.items()):
+            if csv_filename not in current_csv_files:
+                # This CSV file was removed
+                for entry_key in entries:
+                    files_to_remove.append(entry_key)
+                # Remove the tracking entry for this file
+                st.session_state.csv_file_entries.pop(csv_filename, None)
+        
+        # Remove data for entries from deleted CSV files
+        for entry_key in files_to_remove:
+            st.session_state.data_dict.pop(entry_key, None)
+            st.session_state.x_data_dict.pop(entry_key, None)
+            st.session_state.custom_names.pop(entry_key, None)
+        
+        # Process uploaded CSV files
         progress_bar_csv = st.progress(0)
         for idx, uploaded_csv in enumerate(uploaded_csv_files):
             new_csv_files_count = 0
+            # Initialize entry tracking for this CSV file if not already present
+            if uploaded_csv.name not in st.session_state.csv_file_entries:
+                st.session_state.csv_file_entries[uploaded_csv.name] = []
+                
             data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
             if error:
                 st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
             else:
+                # Clear previous entries for this file if it's being re-uploaded
+                previous_entries = st.session_state.csv_file_entries.get(uploaded_csv.name, [])
+                for entry in previous_entries:
+                    st.session_state.data_dict.pop(entry, None)
+                    st.session_state.x_data_dict.pop(entry, None)
+                    st.session_state.custom_names.pop(entry, None)
+                
+                # Reset the entries list for this file
+                st.session_state.csv_file_entries[uploaded_csv.name] = []
+                
                 for entry_key, entry_value in data_dict_csv.items():
-                    # Check if file already exists
-                    current_custom_name = custom_names_csv[entry_key]
+                    # Track this entry as belonging to this CSV file
+                    st.session_state.csv_file_entries[uploaded_csv.name].append(entry_key)
                     
-                    if current_custom_name not in st.session_state.custom_names.values():
-                        new_csv_files_count += 1
-                    else:
-                        st.warning(f"Custom name {current_custom_name} from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
-
-                    # Direct assignment instead of update
+                    # Check if this entry name already exists in any other file
+                    current_custom_name = custom_names_csv[entry_key]
+                    duplicate_exists = False
+                    
+                    for existing_key, existing_name in st.session_state.custom_names.items():
+                        if existing_name == current_custom_name and existing_key != entry_key:
+                            duplicate_exists = True
+                            st.warning(f"Custom name '{current_custom_name}' from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
+                            break
+                    
+                    # Add the entry to session state
                     st.session_state.data_dict[entry_key] = entry_value
                     st.session_state.x_data_dict[entry_key] = x_data_dict_csv[entry_key]
                     st.session_state.custom_names[entry_key] = current_custom_name
-                st.success(f"CSV file {uploaded_csv.name} processed successfully. {new_csv_files_count} samples loaded.")
-            #progress_bar_csv.progress((idx + 1) / new_csv_files_count)
+                    
+                    if not duplicate_exists:
+                        new_csv_files_count += 1
+                        
+                st.success(f"CSV file {uploaded_csv.name} processed successfully. {new_csv_files_count} unique samples loaded.")
+            progress_bar_csv.progress((idx + 1) / len(uploaded_csv_files))
 
     
     # Upload new txt files    
@@ -294,6 +344,7 @@ if st.session_state.current_page == 'data_upload':
         st.session_state.data_dict = {}
         st.session_state.x_data_dict = {}
         st.session_state.custom_names = {}
+        st.session_state.csv_file_entries = {}  # Clear CSV file entries tracking
         st.experimental_rerun()  # Rerun to reset the uploader
         st.success("All uploaded data cleared.")
 
@@ -576,6 +627,7 @@ elif st.session_state.current_page == 'visualization':
 
             else:
                 st.info("Please select files for at least one plot to generate visualizations.")
+                st.info("Click 'Add Plot' to start creating visualizations.")
                 
                 st.subheader("Download Options")
                 col1, col2, col3, col4 = st.columns(4)
