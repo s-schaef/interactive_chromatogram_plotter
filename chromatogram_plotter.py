@@ -201,15 +201,6 @@ def MatplotlibColorCycler(): #TODO: colors are reset for each new data entry, sh
 
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
-# test color cycler
-st.text("Color Cycler Test:")
-color_cycler = MatplotlibColorCycler()
-for _ in range(10):
-    st.color_picker("Color", value=next(color_cycler))
-st.divider()
-for _ in range(10):
-    st.text(f"{next(color_cycler)}" )
-st.divider()
 
 
 
@@ -502,7 +493,7 @@ elif st.session_state.current_page == 'visualization':
         # Configure each plot
         if st.session_state.plot_configs:
             for i, config in enumerate(st.session_state.plot_configs):
-                color_cycler = iter(MatplotlibColorCycler())
+                color_cycler = MatplotlibColorCycler()
 
                 with st.expander(f"Plot {i+1} Configuration", expanded=True):
                     col1, col2, col3 = st.columns([1, 7, 1, ])
@@ -526,11 +517,9 @@ elif st.session_state.current_page == 'visualization':
                                         config['files'].remove(option)
                             with col22:
                                 if option in config['files']:
-                                    if f"color_{i}_{option}" not in st.session_state:
-                                        st.session_state[f"color_{i}_{option}"] = next(color_cycler)
                                     st.session_state[f"color_{i}_{option}"] = st.color_picker(
                                         "Line Color", 
-                                        value=st.session_state[f"color_{i}_{option}"], 
+                                        value=next(color_cycler), 
                                         key=f"color_picker_{i}_{option}"
                                     )
                                 
