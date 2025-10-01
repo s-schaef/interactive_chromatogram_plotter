@@ -530,45 +530,45 @@ elif st.session_state.current_page == 'visualization':
                             st.rerun()
 
             # Generate and display plots
-            if any(config.get('files') for config in st.session_state.plot_configs):
-                st.subheader("Generated Plots")
-                
-                # Plot options
-                with st.expander("⚙️ Plot Options", expanded=False):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        suptitle_enabled = st.toggle("Enable common title", value=False)
-                        if suptitle_enabled:
-                            suptitle = st.text_input("Common Title (Press ENTER to confirm)", value="Formulation")
-                        else:
-                            suptitle = ""
-                        
-                        supaxes_enabled = st.toggle("Enable common axis labels", value=False)
+            # if any(config.get('files') for config in st.session_state.plot_configs):
+            st.subheader("Generated Plots")
+            
+            # Plot options
+            with st.expander("⚙️ Plot Options", expanded=False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    suptitle_enabled = st.toggle("Enable common title", value=False)
+                    if suptitle_enabled:
+                        suptitle = st.text_input("Common Title (Press ENTER to confirm)", value="Formulation")
+                    else:
+                        suptitle = ""
                     
-                    with col2:
-                        external_label = st.toggle("Enable external legend")
-                        custom_legend = None
-                        if external_label:
-                            custom_legend = st.text_area(
-                                "Each new line is one legend entry. This function is purely cosmetic. It overwrites the existing legend with anything you put in and must be used carefully. Press STRG+ENTER to apply.", 
-                                height=100,
-                                help="Leave empty to use sample names."
-                            )
-
-                # Generate the plot
-                fig = generate_plots(
-                    data_dict,
-                    custom_names, 
-                    x_data_dict, 
-                    st.session_state.plot_configs, 
-                    external_label=external_label, 
-                    custom_legend=custom_legend,
-                    suptitle_enabled=suptitle_enabled,
-                    suptitle=suptitle,
-                    supaxes_enabled=supaxes_enabled,
-                )
+                    supaxes_enabled = st.toggle("Enable common axis labels", value=False)
                 
-                if fig:
+                with col2:
+                    external_label = st.toggle("Enable external legend")
+                    custom_legend = None
+                    if external_label:
+                        custom_legend = st.text_area(
+                            "Each new line is one legend entry. This function is purely cosmetic. It overwrites the existing legend with anything you put in and must be used carefully. Press STRG+ENTER to apply.", 
+                            height=100,
+                            help="Leave empty to use sample names."
+                        )
+
+            # Generate the plot
+            fig = generate_plots(
+                data_dict,
+                custom_names, 
+                x_data_dict, 
+                st.session_state.plot_configs, 
+                external_label=external_label, 
+                custom_legend=custom_legend,
+                suptitle_enabled=suptitle_enabled,
+                suptitle=suptitle,
+                supaxes_enabled=supaxes_enabled,
+            )
+            
+            if fig:
                     st.pyplot(fig)#, width="content")
                     
                     # Download options
