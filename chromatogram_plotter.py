@@ -480,7 +480,6 @@ elif st.session_state.current_page == 'visualization':
         with col1:
             if st.button("➕ Add Plot", use_container_width=True):
                 st.session_state.plot_configs.append({'files': [], 'title': f'F{len(st.session_state.plot_configs)+1}'})
-                #st.rerun()
         with col2:
             if st.session_state.plot_configs and st.button("🗑️ Clear All", use_container_width=True):
                 st.session_state.plot_configs = []
@@ -488,7 +487,6 @@ elif st.session_state.current_page == 'visualization':
         with col3:
             if st.button("← Back to Data", use_container_width=True):
                 go_to_data_upload()
-                st.rerun()
         
         # Configure each plot
         if st.session_state.plot_configs:
