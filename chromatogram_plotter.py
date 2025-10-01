@@ -504,29 +504,26 @@ elif st.session_state.current_page == 'visualization':
 
                     with col2:
                         # select files to plot from checkbox list
-                        # each color should have a color picker next to it
-                        st.markdown("**Select Samples to Include:**")   
                         col21, col22 = st.columns([5,1])
                         with col21:
                             for option in list(data_dict.keys()):
                                 if option not in config['files']:
                                     if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
-                                        config['files'].append(option)     
-                                        # Assign next color from cycler
-                                        st.session_state[f"color_{i}_{option}"] = next(color_cycler)
-                        with col22: 
-                            for option in list(data_dict.keys()):
-                                if option in config['files']:   
-                                    st.session_state[f"color_{i}_{option}"] = st.color_picker(
-                                        label="",
-                                        value=st.session_state.get(f"color_{i}_{option}", next(color_cycler)),
-                                        key=f"color_picker_{i}_{option}",
-                                        help="Pick a custom color for this sample."
-                                    )
-                                     
-                        if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
-                            config['files'].remove(option)
-        
+                                        config['files'].append(option)
+                                        with col22:
+                                            # ask for custom color to be later used in the plot
+                                            st.session_state[f"color_{i}_{option}"] = st.color_picker(
+                                                f"Color for {custom_names.get(option, option)}", 
+                                                value=next(color_cycler), 
+                                                key=f"color_picker_{i}_{option}"
+                                            )
+
+
+                                        
+                                else:
+                                    if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
+                                        config['files'].remove(option)
+                            
 
 
                     with col3:
