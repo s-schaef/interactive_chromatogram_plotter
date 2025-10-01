@@ -504,25 +504,25 @@ elif st.session_state.current_page == 'visualization':
 
                     with col2:
                         # select files to plot from checkbox list
-                        col21, col22 = st.columns([5,2])
-                        with col21:
-                            for option in list(data_dict.keys()):
+                        for option in list(data_dict.keys()):
+                            col21, col22 = st.columns([5,2])
+                            with col21:
                                 if option not in config['files']:
                                     if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
                                         config['files'].append(option)
-                                        with col22:
-                                            # Get next color from the cycler
-                                            next_color = next(color_cycler)
-                                            st.session_state[f"color_{i}_{option}"] = st.color_picker(
-                                                f"Color for {custom_names.get(option, option)}", 
-                                                value=next_color, 
-                                                key=f"color_picker_{i}_{option}"
-                                            )
                                 else:
                                     if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
                                         config['files'].remove(option)
-                            
-
+                            with col22:
+                                if option in config['files']:
+                                    if f"color_{i}_{option}" not in st.session_state:
+                                        st.session_state[f"color_{i}_{option}"] = next(color_cycler)
+                                    st.session_state[f"color_{i}_{option}"] = st.color_picker(
+                                        "Line Color", 
+                                        value=st.session_state[f"color_{i}_{option}"], 
+                                        key=f"color_picker_{i}_{option}"
+                                    )
+                                
 
                     with col3:
                         if st.button("🗑️", key=f"remove_{i}", help="Remove this plot"):
