@@ -33,20 +33,20 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     for i, config in enumerate(valid_configs):
         ax = axs[i]
         
-        if external_label: # and custom_legend:
+        if external_label:
             for filename in config['files']:
                 if filename in data_dict:
-                    ax.plot(x_data_dict[filename], data_dict[filename],
-                            color=st.session_state.get(f"color_{i}_{filename}", None)  # Use custom color if provided
-                           )
+                    color = st.session_state.get(f"color_{i}_{filename}")
+                    ax.plot(x_data_dict[filename], data_dict[filename], color=color)
         else:
             for filename in config['files']:
                 if filename in data_dict:
+                    color = st.session_state.get(f"color_{i}_{filename}")
                     ax.plot(
                         x_data_dict[filename], 
                         data_dict[filename], 
                         label=custom_names.get(filename, filename),
-                        color=st.session_state.get(f"color_{i}_{filename}", None)  # Use custom color if provided
+                        color=color
                     )
             ax.legend(loc="upper left", fontsize='small')
             # if config['files'] and not custom_legend:  # Only add legend if there are files
@@ -491,9 +491,9 @@ elif st.session_state.current_page == 'visualization':
         # Configure each plot
         if st.session_state.plot_configs:
             for i, config in enumerate(st.session_state.plot_configs):
-                with st.expander(f"Plot {i+1} Configuration", expanded=True):
-                    color_cycler = iter(MatplotlibColorCycler())
+                color_cycler = iter(MatplotlibColorCycler())
 
+                with st.expander(f"Plot {i+1} Configuration", expanded=True):
                     col1, col2, col3 = st.columns([1, 7, 1, ])
                     with col1:
                         config['title'] = st.text_input(
@@ -511,15 +511,13 @@ elif st.session_state.current_page == 'visualization':
                                     if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
                                         config['files'].append(option)
                                         with col22:
-                                            # ask for custom color to be later used in the plot
+                                            # Get next color from the cycler
+                                            next_color = next(color_cycler)
                                             st.session_state[f"color_{i}_{option}"] = st.color_picker(
                                                 f"Color for {custom_names.get(option, option)}", 
-                                                value=next(color_cycler), 
+                                                value=next_color, 
                                                 key=f"color_picker_{i}_{option}"
                                             )
-
-
-                                        
                                 else:
                                     if not st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
                                         config['files'].remove(option)
