@@ -492,9 +492,9 @@ elif st.session_state.current_page == 'visualization':
         if st.session_state.plot_configs:
             for i, config in enumerate(st.session_state.plot_configs):
                 with st.expander(f"Plot {i+1} Configuration", expanded=True):
-                    color_cycler = MatplotlibColorCycler()
+                    color_cycler = iter(MatplotlibColorCycler())
 
-                    col1, col2, col3 = st.columns([2, 7, 1, ])
+                    col1, col2, col3 = st.columns([1, 7, 1, ])
                     with col1:
                         config['title'] = st.text_input(
                             "Plot Title", 
@@ -504,7 +504,7 @@ elif st.session_state.current_page == 'visualization':
 
                     with col2:
                         # select files to plot from checkbox list
-                        col21, col22 = st.columns([5,1])
+                        col21, col22 = st.columns([5,2])
                         with col21:
                             for option in list(data_dict.keys()):
                                 if option not in config['files']:
