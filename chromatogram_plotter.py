@@ -201,6 +201,17 @@ def MatplotlibColorCycler(): #TODO: colors are reset for each new data entry, sh
 
 # Set page config
 st.set_page_config(page_title="Chromatogram Plotter", layout="wide")
+# test color cycler
+st.text("Color Cycler Test:")
+color_cycler = MatplotlibColorCycler()
+for _ in range(10):
+    st.color_picker("Color", value=next(color_cycler))
+st.divider()
+for _ in range(10):
+    st.text(f"{next(color_cycler)}" )
+st.divider()
+
+
 
 # Initialize session state
 if 'data_dict' not in st.session_state:
