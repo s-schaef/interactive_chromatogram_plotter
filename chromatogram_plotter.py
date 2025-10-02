@@ -366,7 +366,9 @@ if st.session_state.current_page == 'data_upload':
         
         # Remove data for removed TXT files
         for filename in txt_files_to_remove:
-            if filename not in st.session_state.csv_file_entries:
+            st.text(str(st.session_state.txt_file_entries))
+            st.text(str(st.session_state.csv_file_entries))
+            if filename not in st.session_state.csv_file_entries.items().values():
                 st.session_state.data_dict.pop(filename, None)
                 st.session_state.x_data_dict.pop(filename, None)
                 st.session_state.custom_names.pop(filename, None)
