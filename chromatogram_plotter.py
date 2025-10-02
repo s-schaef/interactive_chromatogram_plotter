@@ -251,17 +251,28 @@ if st.session_state.current_page == 'data_upload':
     You can also upload preexisting CSV files exported from this app to continue working on it or to add new data into it.
     """)
 
-    # File upload section
-    # Upload preexisting CSV file 
-    st.subheader("Optional: Upload Existing CSV")
-    if "csv_uploader_key" not in st.session_state:
-        st.session_state["csv_uploader_key"] = 10000  # Initialize key for CSV uploader
-    uploaded_csv_files = st.file_uploader("Upload a preexisting CSV file (optional)", type=['csv'], accept_multiple_files=True, key=st.session_state["csv_uploader_key"])
-
+    # Initialize all session state variables
+    if 'data_dict' not in st.session_state:
+        st.session_state.data_dict = {}
+    if 'x_data_dict' not in st.session_state:
+        st.session_state.x_data_dict = {}
+    if 'custom_names' not in st.session_state:
+        st.session_state.custom_names = {}
     if 'csv_file_entries' not in st.session_state:
         st.session_state.csv_file_entries = {}
+    if 'txt_file_entries' not in st.session_state:
+        st.session_state.txt_file_entries = {}
 
-    # Track current CSV files to detect removals
+    # 1. CSV FILE UPLOAD SECTION
+    st.subheader("Optional: Upload Existing CSV")
+    if "csv_uploader_key" not in st.session_state:
+        st.session_state["csv_uploader_key"] = 10000
+    uploaded_csv_files = st.file_uploader("Upload a preexisting CSV file (optional)", 
+                                        type=['csv'], 
+                                        accept_multiple_files=True, 
+                                        key=st.session_state["csv_uploader_key"])
+
+    # Process CSV files
     current_csv_files = set()
     if uploaded_csv_files:
         for file in uploaded_csv_files:
@@ -271,10 +282,8 @@ if st.session_state.current_page == 'data_upload':
         files_to_remove = []
         for csv_filename, entries in list(st.session_state.csv_file_entries.items()):
             if csv_filename not in current_csv_files:
-                # This CSV file was removed
                 for entry_key in entries:
                     files_to_remove.append(entry_key)
-                # Remove the tracking entry for this file
                 st.session_state.csv_file_entries.pop(csv_filename, None)
         
         # Remove data for entries from deleted CSV files
@@ -287,7 +296,6 @@ if st.session_state.current_page == 'data_upload':
         progress_bar_csv = st.progress(0)
         for idx, uploaded_csv in enumerate(uploaded_csv_files):
             new_csv_files_count = 0
-            # Initialize entry tracking for this CSV file if not already present
             if uploaded_csv.name not in st.session_state.csv_file_entries:
                 st.session_state.csv_file_entries[uploaded_csv.name] = []
                 
@@ -302,14 +310,11 @@ if st.session_state.current_page == 'data_upload':
                     st.session_state.x_data_dict.pop(entry, None)
                     st.session_state.custom_names.pop(entry, None)
                 
-                # Reset the entries list for this file
                 st.session_state.csv_file_entries[uploaded_csv.name] = []
                 
                 for entry_key, entry_value in data_dict_csv.items():
-                    # Track this entry as belonging to this CSV file
                     st.session_state.csv_file_entries[uploaded_csv.name].append(entry_key)
                     
-                    # Check if this entry name already exists in any other file
                     current_custom_name = custom_names_csv[entry_key]
                     duplicate_exists = False
                     
@@ -319,7 +324,6 @@ if st.session_state.current_page == 'data_upload':
                             st.warning(f"Custom name '{current_custom_name}' from CSV file {uploaded_csv.name} already exists. Latest uploaded entry will be used.")
                             break
                     
-                    # Add the entry to session state
                     st.session_state.data_dict[entry_key] = entry_value
                     st.session_state.x_data_dict[entry_key] = x_data_dict_csv[entry_key]
                     st.session_state.custom_names[entry_key] = current_custom_name
@@ -330,24 +334,74 @@ if st.session_state.current_page == 'data_upload':
                 st.success(f"CSV file {uploaded_csv.name} processed successfully. {new_csv_files_count} unique samples loaded.")
             progress_bar_csv.progress((idx + 1) / len(uploaded_csv_files))
 
-    
-    # Upload new txt files    
+    # 2. TXT FILE UPLOAD SECTION
     st.subheader("Upload Chromelion Files")
     if "txt_uploader_key" not in st.session_state:
-        st.session_state["txt_uploader_key"] = 0  # Initialize key for txt uploader
+        st.session_state["txt_uploader_key"] = 0
+    uploaded_txt_files = st.file_uploader("Upload your .txt files", 
+                                        accept_multiple_files=True, 
+                                        type=['txt'], 
+                                        key=st.session_state["txt_uploader_key"])
 
-    uploaded_txt_files = st.file_uploader("Upload your .txt files", accept_multiple_files=True, type=['txt'], key=st.session_state["txt_uploader_key"])
+    # Process TXT files
+    default_names = {}
+    new_files_count = 0
+    current_txt_files = set()
 
-    # delete all  data
+    if uploaded_txt_files:
+        progress_bar = st.progress(0)
+        
+        # Track current files
+        for file in uploaded_txt_files:
+            current_txt_files.add(file.name)
+        
+        # Clean up removed TXT files
+        txt_files_to_remove = []
+        for txt_filename in list(st.session_state.txt_file_entries.keys()):
+            if txt_filename not in current_txt_files:
+                txt_files_to_remove.append(txt_filename)
+                st.session_state.txt_file_entries.pop(txt_filename, None)
+        
+        # Remove data for removed TXT files
+        for filename in txt_files_to_remove:
+            st.session_state.data_dict.pop(filename, None)
+            st.session_state.x_data_dict.pop(filename, None)
+            st.session_state.custom_names.pop(filename, None)
+
+        # Process new TXT files
+        for idx, file in enumerate(uploaded_txt_files):
+            df, default_name, error = process_txt_file(file)
+            if error:
+                st.error(f"Error in file {file.name}: {error}")
+            else:
+                is_new_file = file.name not in st.session_state.txt_file_entries
+                
+                if is_new_file:
+                    new_files_count += 1
+                    st.session_state.txt_file_entries[file.name] = True
+                
+                st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
+                st.session_state.data_dict[file.name] = df.iloc[:, 1]
+                default_names[file.name] = default_name or file.name
+                
+                if file.name not in st.session_state.custom_names:
+                    st.session_state.custom_names[file.name] = default_name or file.name
+            
+            progress_bar.progress((idx + 1) / len(uploaded_txt_files))
+        
+        if new_files_count > 0:
+            st.success(f"{new_files_count} new file(s) processed successfully.")
+
+    # 3. CLEAR ALL DATA BUTTON
     if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
-        st.session_state["txt_uploader_key"] += 1  # Change key to reset uploader
-        st.session_state["csv_uploader_key"] += 1  # Change key to reset uploader
-        # also reset data and custom names
+        st.session_state["txt_uploader_key"] += 1
+        st.session_state["csv_uploader_key"] += 1
         st.session_state.data_dict = {}
         st.session_state.x_data_dict = {}
         st.session_state.custom_names = {}
-        st.session_state.csv_file_entries = {}  # Clear CSV file entries tracking
-        st.experimental_rerun()  # Rerun to reset the uploader
+        st.session_state.csv_file_entries = {}
+        st.session_state.txt_file_entries = {}
+        st.rerun()
         st.success("All uploaded data cleared.")
 
     # Process uploaded txt files
@@ -487,6 +541,7 @@ elif st.session_state.current_page == 'visualization':
         with col3:
             if st.button("← Back to Data", use_container_width=True):
                 go_to_data_upload()
+                st.rerun()
         
         # Configure each plot
         if st.session_state.plot_configs:
