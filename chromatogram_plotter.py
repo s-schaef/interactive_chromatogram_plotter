@@ -287,10 +287,12 @@ if st.session_state.current_page == 'data_upload':
                 st.session_state.csv_file_entries.pop(csv_filename, None)
         
         # Remove data for entries from deleted CSV files
+        
         for entry_key in files_to_remove:
-            st.session_state.data_dict.pop(entry_key, None)
-            st.session_state.x_data_dict.pop(entry_key, None)
-            st.session_state.custom_names.pop(entry_key, None)
+            if entry_key not in st.session_state.txt_file_entries:
+                st.session_state.data_dict.pop(entry_key, None)
+                st.session_state.x_data_dict.pop(entry_key, None)
+                st.session_state.custom_names.pop(entry_key, None)
         
         # Process uploaded CSV files
         progress_bar_csv = st.progress(0)
@@ -364,9 +366,10 @@ if st.session_state.current_page == 'data_upload':
         
         # Remove data for removed TXT files
         for filename in txt_files_to_remove:
-            st.session_state.data_dict.pop(filename, None)
-            st.session_state.x_data_dict.pop(filename, None)
-            st.session_state.custom_names.pop(filename, None)
+            if filename not in st.session_state.csv_file_entries:
+                st.session_state.data_dict.pop(filename, None)
+                st.session_state.x_data_dict.pop(filename, None)
+                st.session_state.custom_names.pop(filename, None)
 
         # Process new TXT files
         for idx, file in enumerate(uploaded_txt_files):
