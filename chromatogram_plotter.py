@@ -373,6 +373,7 @@ if st.session_state.current_page == 'data_upload':
                 st.session_state.x_data_dict.pop(filename, None)
                 st.session_state.custom_names.pop(filename, None)
 
+
         # Process new TXT files
         for idx, file in enumerate(uploaded_txt_files):
             df, default_name, error = process_txt_file(file)
