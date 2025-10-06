@@ -262,6 +262,10 @@ if st.session_state.current_page == 'data_upload':
         st.session_state.csv_file_entries = {}
     if 'txt_file_entries' not in st.session_state:
         st.session_state.txt_file_entries = {}
+    if st.session_state.current_csv_files not in st.session_state:
+        st.session_state.current_csv_files = set()
+    if st.session_state.current_txt_files not in st.session_state:   
+        st.session_state.current_txt_files = set()
 
     # 1. CSV FILE UPLOAD SECTION
     st.subheader("Optional: Upload Existing CSV")
@@ -273,8 +277,7 @@ if st.session_state.current_page == 'data_upload':
                                         key=st.session_state["csv_uploader_key"])
 
     # Process CSV files
-    if st.session_state.csv_file_entries is None:
-        current_csv_files = set()
+
     if uploaded_csv_files:
         for file in uploaded_csv_files:
             current_csv_files.add(file.name)
