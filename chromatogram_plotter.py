@@ -311,6 +311,7 @@ if st.session_state.current_page == 'data_upload':
                 # Clear previous entries for this file if it's being re-uploaded
                 previous_entries = st.session_state.csv_file_entries.get(uploaded_csv.name, [])
                 for entry in previous_entries:
+                    st.warning(f"Entry '{entry}' from CSV file {uploaded_csv.name} is being replaced due to re-upload.")
                     st.session_state.data_dict.pop(entry, None)
                     st.session_state.x_data_dict.pop(entry, None)
                     st.session_state.custom_names.pop(entry, None)
@@ -456,10 +457,9 @@ if st.session_state.current_page == 'data_upload':
                 
                 # If we're re-running the app and the file was already processed before
                 if file.name in st.session_state.data_dict:
-                    # Check if the content is the same (optional, can be complex)
-                    # For simplicity, we'll just assume it's a re-upload
                     is_new_file = False
                     # Remove the old data to avoid the warning
+                    st.warning(f"File {file.name} is being replaced due to re-upload.")
                     st.session_state.data_dict.pop(file.name, None)
                     st.session_state.x_data_dict.pop(file.name, None)
                     # Keep the custom name if it exists
