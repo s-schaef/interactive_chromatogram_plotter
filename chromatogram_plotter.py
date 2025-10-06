@@ -367,11 +367,22 @@ if st.session_state.current_page == 'data_upload':
         # Remove data for removed TXT files
         for filename in txt_files_to_remove:
             st.text(str(st.session_state.txt_file_entries))
-            st.text(str(st.session_state.csv_file_entries))
-            if filename not in st.session_state.csv_file_entries.items():
-                st.session_state.data_dict.pop(filename, None)
-                st.session_state.x_data_dict.pop(filename, None)
-                st.session_state.custom_names.pop(filename, None)
+            st.text(str(st.session_state.csv_file_entries.items()))
+            for csv_file, entries in st.session_state.csv_file_entries.items():
+                st.text(f"Checking CSV file: {csv_file} with entries {entries}")
+                if filename not in entries:
+                    st.text(f"Removing data for {filename}")
+                    st.session_state.data_dict.pop(filename, None)
+                    st.session_state.x_data_dict.pop(filename, None)
+                    st.session_state.custom_names.pop(filename, None)
+                else:   
+                    st.text(f"Keeping data for {filename} as it exists in CSV entries")
+
+            #         break
+            # if filename not in st.session_state.csv_file_entries.items():
+            #     st.session_state.data_dict.pop(filename, None)
+            #     st.session_state.x_data_dict.pop(filename, None)
+            #     st.session_state.custom_names.pop(filename, None)
 
 
         # Process new TXT files
