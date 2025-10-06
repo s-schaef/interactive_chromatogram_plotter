@@ -460,7 +460,6 @@ if st.session_state.current_page == 'data_upload':
                 if file.name in st.session_state.data_dict:
                     is_new_file = False
                     # Remove the old data to avoid the warning
-                    st.warning(f"File {file.name} is being replaced due to re-upload.")
                     st.session_state.data_dict.pop(file.name, None)
                     st.session_state.x_data_dict.pop(file.name, None)
                     # Keep the custom name if it exists
@@ -575,7 +574,7 @@ elif st.session_state.current_page == 'visualization':
                     with col2:
                         # select files to plot from checkbox list
                         for option in list(data_dict.keys()):
-                            col21, col22 = st.columns([5,2])
+                            col21, col22 = st.columns([5,1])
                             with col21:
                                 if option not in config['files']:
                                     if st.checkbox(custom_names.get(option, option), key=f"chk_{i}_{option}"):
@@ -586,7 +585,6 @@ elif st.session_state.current_page == 'visualization':
                             with col22:
                                 if option in config['files']:
                                     st.session_state[f"color_{i}_{option}"] = st.color_picker(
-                                        "Line Color", 
                                         value=next(color_cycler), 
                                         key=f"color_picker_{i}_{option}"
                                     )
