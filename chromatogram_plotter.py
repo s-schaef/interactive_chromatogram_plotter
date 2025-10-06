@@ -273,7 +273,8 @@ if st.session_state.current_page == 'data_upload':
                                         key=st.session_state["csv_uploader_key"])
 
     # Process CSV files
-    current_csv_files = set()
+    if st.session_state.csv_file_entries is None:
+        current_csv_files = set()
     if uploaded_csv_files:
         for file in uploaded_csv_files:
             current_csv_files.add(file.name)
@@ -348,7 +349,8 @@ if st.session_state.current_page == 'data_upload':
     # Process TXT files
     default_names = {}
     new_files_count = 0
-    current_txt_files = set()
+    if st.session_state.txt_file_entries is None:
+        current_txt_files = set()
 
     if uploaded_txt_files:
         progress_bar = st.progress(0)
@@ -366,8 +368,6 @@ if st.session_state.current_page == 'data_upload':
         
         # Remove data for removed TXT files
         for filename in txt_files_to_remove:
-            st.text(str(st.session_state.txt_file_entries))
-            st.text(str(st.session_state.csv_file_entries.items()))
             for csv_file, csv_entries in st.session_state.csv_file_entries.items():
                 st.text(f"Checking CSV file: {csv_file} with entries {csv_entries}")
                 if filename not in csv_entries:
@@ -378,14 +378,6 @@ if st.session_state.current_page == 'data_upload':
                 else:   
                     st.text(f"Keeping data for {filename} as it exists in CSV entries")
 
-            #         break
-            # if filename not in st.session_state.csv_file_entries.items():
-            #     st.session_state.data_dict.pop(filename, None)
-            #     st.session_state.x_data_dict.pop(filename, None)
-            #     st.session_state.custom_names.pop(filename, None)
-        st.text(str(st.session_state.csv_file_entries.items()))
-        st.text(str(st.session_state.txt_file_entries))
-        st.text(str(st.session_state.custom_names))
 
 
         # Process new TXT files
