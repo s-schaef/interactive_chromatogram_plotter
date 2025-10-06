@@ -85,6 +85,10 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
             # Only show x-tick labels for bottom axes
             if row < (rows - 1):
                 ax.tick_params(axis='x', labelbottom=False)
+            # add them back in for the third plot when five plots are present     
+            if len(valid_configs) == 5 and i == 2:
+                ax.tick_params(axis='x', labelbottom=True)
+
     else:
         all_ylims = []
         for ax in axs:
