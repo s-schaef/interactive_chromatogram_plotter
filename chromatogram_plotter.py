@@ -311,7 +311,7 @@ if st.session_state.current_page == 'data_upload':
                 # Clear previous entries for this file if it's being re-uploaded
                 previous_entries = st.session_state.csv_file_entries.get(uploaded_csv.name, [])
                 for entry in previous_entries:
-                    st.warning(f"Entry '{entry}' from CSV file {uploaded_csv.name} is being replaced due to re-upload.")
+                    # st.warning(f"Entry '{entry}' from CSV file {uploaded_csv.name} is being replaced due to re-upload.")
                     st.session_state.data_dict.pop(entry, None)
                     st.session_state.x_data_dict.pop(entry, None)
                     st.session_state.custom_names.pop(entry, None)
@@ -587,7 +587,9 @@ elif st.session_state.current_page == 'visualization':
                                     st.session_state[f"color_{i}_{option}"] = st.color_picker(
                                         "",
                                         value=next(color_cycler), 
-                                        key=f"color_picker_{i}_{option}"
+                                        key=f"color_picker_{i}_{option}", 
+                                        help="Pick a custom color for this sample.",
+                                        size="small",
                                     )
                                 
 
