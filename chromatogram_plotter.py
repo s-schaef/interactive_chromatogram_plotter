@@ -262,9 +262,9 @@ if st.session_state.current_page == 'data_upload':
         st.session_state.csv_file_entries = {}
     if 'txt_file_entries' not in st.session_state:
         st.session_state.txt_file_entries = {}
-    if st.session_state.current_csv_files not in st.session_state:
+    if 'current_csv_files' not in st.session_state:
         st.session_state.current_csv_files = set()
-    if st.session_state.current_txt_files not in st.session_state:   
+    if 'current_txt_files' not in st.session_state:   
         st.session_state.current_txt_files = set()
 
     # 1. CSV FILE UPLOAD SECTION
@@ -352,8 +352,6 @@ if st.session_state.current_page == 'data_upload':
     # Process TXT files
     default_names = {}
     new_files_count = 0
-    if st.session_state.txt_file_entries is None:
-        current_txt_files = set()
 
     if uploaded_txt_files:
         progress_bar = st.progress(0)
