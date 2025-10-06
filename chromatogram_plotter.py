@@ -585,6 +585,7 @@ elif st.session_state.current_page == 'visualization':
                             with col22:
                                 if option in config['files']:
                                     st.session_state[f"color_{i}_{option}"] = st.color_picker(
+                                        "",
                                         value=next(color_cycler), 
                                         key=f"color_picker_{i}_{option}"
                                     )
