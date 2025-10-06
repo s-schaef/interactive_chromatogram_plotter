@@ -280,12 +280,12 @@ if st.session_state.current_page == 'data_upload':
 
     if uploaded_csv_files:
         for file in uploaded_csv_files:
-            current_csv_files.add(file.name)
+            st.session_state.current_csv_files.add(file.name)
         
         # Clean up removed CSV files
         files_to_remove = []
         for csv_filename, entries in list(st.session_state.csv_file_entries.items()):
-            if csv_filename not in current_csv_files:
+            if csv_filename not in st.session_state.current_csv_files:
                 for entry_key in entries:
                     files_to_remove.append(entry_key)
                 st.session_state.csv_file_entries.pop(csv_filename, None)
@@ -358,12 +358,12 @@ if st.session_state.current_page == 'data_upload':
         
         # Track current files
         for file in uploaded_txt_files:
-            current_txt_files.add(file.name)
+            st.session_state.current_txt_files.add(file.name)
         
         # Clean up removed TXT files
         txt_files_to_remove = []
         for txt_filename in list(st.session_state.txt_file_entries.keys()):
-            if txt_filename not in current_txt_files:
+            if txt_filename not in st.session_state.current_txt_files:
                 txt_files_to_remove.append(txt_filename)
                 st.session_state.txt_file_entries.pop(txt_filename, None)
         
