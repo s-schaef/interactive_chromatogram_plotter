@@ -353,7 +353,8 @@ if st.session_state.current_page == 'data_upload':
     default_names = {}
     new_files_count = 0
 
-    if uploaded_txt_files:     
+    if uploaded_txt_files:
+        progress_bar = st.progress(0)     
         # Track current files
         for file in uploaded_txt_files:
             st.session_state.current_txt_files.add(file.name)
