@@ -273,15 +273,18 @@ if st.session_state.current_page == 'data_upload':
                                         key=st.session_state["csv_uploader_key"])
 
     # Process CSV files
-    current_csv_files = set()
+    current_files = set()
     if uploaded_csv_files:
         for file in uploaded_csv_files:
-            current_csv_files.add(file.name)
+            st.text(f"Uploaded CSV: {file.name}")
+            for data in file:
+                current_files.add(data.name)
+                st.text(data.name)
         
         # Clean up removed CSV files
         files_to_remove = []
         for csv_filename, entries in list(st.session_state.csv_file_entries.items()):
-            if csv_filename not in current_csv_files:
+            if csv_filename not in current_files:
                 for entry_key in entries:
                     files_to_remove.append(entry_key)
                 st.session_state.csv_file_entries.pop(csv_filename, None)
@@ -383,6 +386,9 @@ if st.session_state.current_page == 'data_upload':
             #     st.session_state.data_dict.pop(filename, None)
             #     st.session_state.x_data_dict.pop(filename, None)
             #     st.session_state.custom_names.pop(filename, None)
+        st.text(str(st.session_state.csv_file_entries.items()))
+        st.text(str(st.session_state.txt_file_entries))
+        st.text(str(st.session_state.custom_names))
 
 
         # Process new TXT files
@@ -426,12 +432,13 @@ if st.session_state.current_page == 'data_upload':
     new_files_count = 0
 
     # Track current files to detect removals
-    current_files = set()
+    #current_files = set()
 
     if uploaded_txt_files:
         progress_bar = st.progress(0)
         
-        # First, identify all current files
+
+
         for file in uploaded_txt_files:
             current_files.add(file.name)
         
