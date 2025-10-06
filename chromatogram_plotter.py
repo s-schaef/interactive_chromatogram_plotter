@@ -588,8 +588,7 @@ elif st.session_state.current_page == 'visualization':
                                         "",
                                         value=next(color_cycler), 
                                         key=f"color_picker_{i}_{option}", 
-                                        help="Pick a custom color for this sample.",
-                                        kwargs={"width": 5 },
+                                        kwargs={"width": 2 },
                                     )
                                 
 
