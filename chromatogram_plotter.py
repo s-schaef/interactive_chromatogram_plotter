@@ -277,13 +277,20 @@ if st.session_state.current_page == 'data_upload':
                                         key=st.session_state["csv_uploader_key"])
 
     # Process CSV files
-
     if uploaded_csv_files:
+        files_to_remove = []
         for file in uploaded_csv_files:
             st.session_state.current_csv_files.add(file.name)
+
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"{file.name}")
+            with col2:
+                if st.button("Delete", key=f"del_{file.name}"):
+                    files_to_remove.append(file.name)
+                    st.experimental_rerun()
         
         # Clean up removed CSV files
-        files_to_remove = []
         for csv_filename, entries in list(st.session_state.csv_file_entries.items()):
             if csv_filename not in st.session_state.current_csv_files:
                 for entry_key in entries:
