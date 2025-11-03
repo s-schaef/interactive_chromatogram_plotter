@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 ### Function definitions ###
 
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None,
-                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=True):
+                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False):
     """Generate matplotlib plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
@@ -18,11 +18,11 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
     
     # Handle subplot layout
     if len(valid_configs) in [1, 2, 3]:
-        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False)
+        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False, sharey=supaxes_enabled, sharex=supaxes_enabled)
     elif len(valid_configs) == 4:
-        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False)
+        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False, sharey=supaxes_enabled, sharex=supaxes_enabled)
     else:
-        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=False)
+        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=False, sharey=supaxes_enabled, sharex=supaxes_enabled)
     axs = axs.flat
 
     # Remove unused axes for non-rectangular layouts
@@ -51,65 +51,16 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
             ax.legend(loc="upper left", fontsize='small')
             # if config['files'] and not custom_legend:  # Only add legend if there are files
             #     ax.legend(loc="upper left", fontsize='small')
-        
+
+        if log_y:
+            ax.set_yscale('log')
+
         ax.set_title(config.get('title', f'Plot {i+1}'))
     
     if suptitle_enabled and suptitle:
         fig.suptitle(suptitle, fontsize=16)
-    
-    if supaxes_enabled:
-        fig.supxlabel("Time (min)")
-        fig.supylabel("Intensity (mAU)")
-        
-        # Determine the layout shape
-        if len(valid_configs) in [1, 2, 3]:
-            rows, cols = 1, len(valid_configs)
-        elif len(valid_configs) == 4:
-            rows, cols = 2, 2
-        else:
-            rows, cols = math.ceil(len(valid_configs)/3), 3
-        
-        # Hide tick labels for non-edge axes
-        for i, ax in enumerate(axs[:len(valid_configs)]):
-            if not ax.get_visible():
-                continue
-                
-            # Calculate row and column position
-            row = i // cols
-            col = i % cols
-            
-            # Only show y-tick labels for leftmost axes
-            if col > 0:
-                ax.tick_params(axis='y', labelleft=False)
-            
-            # Only show x-tick labels for bottom axes
-            if row < (rows - 1):
-                ax.tick_params(axis='x', labelbottom=False)
-            # add them back in for the third plot when five plots are present     
-            if len(valid_configs) == 5 and i == 2:
-                ax.tick_params(axis='x', labelbottom=True)
 
-    else:
-        all_ylims = []
-        for ax in axs:
-            if ax.get_visible():
-                ax.set_xlabel("Time (min)")
-                ax.set_ylabel("Intensity (mAU)")
-                
-                # Update limits based on the plotted data
-                ax.relim()
-                ax.autoscale_view()
-                
-                all_ylims.append(ax.get_ylim())
-        
-        # Now set consistent y-limits across all axes
-        if all_ylims:
-            y_min = min(lim[0] for lim in all_ylims)
-            y_max = max(lim[1] for lim in all_ylims)
-            for ax in axs:
-                if ax.get_visible():
-                    ax.set_ylim(y_min, y_max)
-    
+
     if external_label and custom_legend:
         labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
@@ -148,10 +99,10 @@ def process_txt_file(uploaded_file):
         if len(lines) >= 6:
             sixth_line_parts = lines[5].strip().split('\t')
             if len(sixth_line_parts) >= 2 and sixth_line_parts[0].strip() == "Injection":
-                default_name = sixth_line_parts[1].strip()
+                default_name = sixth_line_parts[-1].strip() # take last column as name
 
         # Read the file into a DataFrame    
-        df = pd.read_csv(uploaded_file, sep='\t', header=42)
+        df = pd.read_csv(uploaded_file, sep='\t', header=42, thousands=',', engine='python')
         if len(df.columns) != 3:
             return None, None, "File should have exactly 3 columns."
        
@@ -399,7 +350,7 @@ if st.session_state.current_page == 'data_upload':
                 st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
                 st.session_state.data_dict[file.name] = df.iloc[:, 1]
                 default_names[file.name] = default_name or file.name
-                
+
                 if file.name not in st.session_state.custom_names:
                     st.session_state.custom_names[file.name] = default_name or file.name
             
@@ -407,6 +358,7 @@ if st.session_state.current_page == 'data_upload':
         
         if new_files_count > 0:
             st.success(f"{new_files_count} new file(s) processed successfully.")
+
 
     # 3. CLEAR ALL DATA BUTTON
     if st.button("🗑️ Clear All Uploaded Data", help="This will remove all uploaded data and custom names."):
@@ -419,71 +371,6 @@ if st.session_state.current_page == 'data_upload':
         st.session_state.txt_file_entries = {}
         st.rerun()
         st.success("All uploaded data cleared.")
-
-    # Process uploaded txt files
-    default_names = {}
-    new_files_count = 0
-
-    # Track current files to detect removals
-    current_files = set()
-
-    if uploaded_txt_files:
-        progress_bar = st.progress(0)
-        
-        for csv_file, csv_entries in st.session_state.csv_file_entries.items():
-            for file in csv_entries:
-                current_files.add(file)
-
-
-        for file in uploaded_txt_files:
-            current_files.add(file.name)
-        
-        # Clean up removed files before processing new ones
-        files_to_remove = []
-        if hasattr(st.session_state, 'data_dict'):
-            for filename in st.session_state.data_dict.keys():
-                if filename not in current_files:
-                    files_to_remove.append(filename)
-            
-            for filename in files_to_remove:
-                # Remove data for files that were deleted via the "x" button
-                st.session_state.data_dict.pop(filename, None)
-                st.session_state.x_data_dict.pop(filename, None)
-                st.session_state.custom_names.pop(filename, None)
-        
-        # Now process the uploaded files
-        for idx, file in enumerate(uploaded_txt_files):
-            df, default_name, error = process_txt_file(file)
-            if error:
-                st.error(f"Error in file {file.name}: {error}")
-            else:
-                # Check if this is a new file in this session
-                is_new_file = True
-                
-                # If we're re-running the app and the file was already processed before
-                if file.name in st.session_state.data_dict:
-                    is_new_file = False
-                    # Remove the old data to avoid the warning
-                    st.session_state.data_dict.pop(file.name, None)
-                    st.session_state.x_data_dict.pop(file.name, None)
-                    # Keep the custom name if it exists
-                
-                if is_new_file:
-                    new_files_count += 1
-                
-                # Process the file
-                st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
-                st.session_state.data_dict[file.name] = df.iloc[:, 1]
-                default_names[file.name] = default_name or file.name
-                
-                # Initialize custom name if not present
-                if file.name not in st.session_state.custom_names:
-                    st.session_state.custom_names[file.name] = default_name or file.name
-            
-            progress_bar.progress((idx + 1) / len(uploaded_txt_files))
-        
-        if new_files_count > 0:
-            st.success(f"{new_files_count} new file(s) processed successfully.")
 
     # Custom names input
     if hasattr(st.session_state, 'data_dict') and st.session_state.data_dict:
@@ -626,6 +513,7 @@ elif st.session_state.current_page == 'visualization':
                             height=100,
                             help="Leave empty to use sample names."
                         )
+                    log_y = st.toggle("Enable logarithmic y-axis", value=False)
 
             # Generate the plot
             fig = generate_plots(
@@ -638,6 +526,7 @@ elif st.session_state.current_page == 'visualization':
                 suptitle_enabled=suptitle_enabled,
                 suptitle=suptitle,
                 supaxes_enabled=supaxes_enabled,
+                log_y=log_y
             )
             
             if fig:
