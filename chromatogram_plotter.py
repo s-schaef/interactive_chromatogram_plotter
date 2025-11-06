@@ -1,4 +1,5 @@
 import io
+import re
 import math
 import pandas as pd
 import streamlit as st
@@ -7,32 +8,59 @@ import matplotlib.pyplot as plt
 
 ### Function definitions ###
 
-def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, external_label=False, custom_legend=None,
-                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False,):
+def generate_plots(
+    data_dict,
+    custom_names,
+    x_data_dict,
+    plot_configs,
+    ylabels_per_sample,            # NEW: dict sample -> ylabel like 'Signal (pA)'
+    external_label=False,
+    custom_legend=None,
+    suptitle_enabled=True,
+    suptitle="Formulation",
+    supaxes_enabled=False,
+    log_y=False,
+):
     """Generate matplotlib plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
-    
     if not valid_configs:
         return None
-    
+
     # Handle subplot layout
     if len(valid_configs) in [1, 2, 3]:
-        fig, axs = plt.subplots(1, len(valid_configs), figsize=(5*len(valid_configs), 5), squeeze=False, sharey=supaxes_enabled, sharex=supaxes_enabled)
+        fig, axs = plt.subplots(
+            1, len(valid_configs),
+            figsize=(5 * len(valid_configs), 5),
+            squeeze=False,
+            sharey=supaxes_enabled, sharex=supaxes_enabled
+        )
     elif len(valid_configs) == 4:
-        fig, axs = plt.subplots(2, 2, figsize=(10, 10), squeeze=False, sharey=supaxes_enabled, sharex=supaxes_enabled)
+        fig, axs = plt.subplots(
+            2, 2, figsize=(10, 10),
+            squeeze=False,
+            sharey=supaxes_enabled, sharex=supaxes_enabled
+        )
     else:
-        fig, axs = plt.subplots(math.ceil(len(valid_configs)/3), 3, figsize=(15, 10), squeeze=False, sharey=supaxes_enabled, sharex=supaxes_enabled)
+        fig, axs = plt.subplots(
+            math.ceil(len(valid_configs) / 3), 3,
+            figsize=(15, 10), squeeze=False,
+            sharey=supaxes_enabled, sharex=supaxes_enabled
+        )
     axs = axs.flat
 
     # Remove unused axes for non-rectangular layouts
     total_subplots = len(axs)
     for i in range(len(valid_configs), total_subplots):
         axs[i].set_visible(False)
-        
+
+    subplot_ylabels = []    # keep computed ylabels per subplot
+    any_subplot_mixed = False
+
     for i, config in enumerate(valid_configs):
         ax = axs[i]
-        
+
+        # Plot traces
         if external_label:
             for filename in config['files']:
                 if filename in data_dict:
@@ -43,112 +71,231 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, e
                 if filename in data_dict:
                     color = st.session_state.get(f"color_{i}_{filename}")
                     ax.plot(
-                        x_data_dict[filename], 
-                        data_dict[filename], 
+                        x_data_dict[filename],
+                        data_dict[filename],
                         label=custom_names.get(filename, filename),
                         color=color
                     )
             ax.legend(loc="upper left", fontsize='small')
-            # if config['files'] and not custom_legend:  # Only add legend if there are files
-            #     ax.legend(loc="upper left", fontsize='small')
 
         if log_y:
             ax.set_yscale('log')
 
         ax.set_title(config.get('title', f'Plot {i+1}'))
-    
-    if suptitle_enabled and suptitle:
-        fig.suptitle(suptitle, fontsize=16)
 
+        # --- Determine ylabel for this subplot ---
+        used = [f for f in config['files'] if f in data_dict]
+        used_ylabels = { ylabels_per_sample.get(f, "Signal") for f in used }
 
-    if external_label and custom_legend:
-        labels = [line.strip() for line in custom_legend.splitlines() if line.strip()]
-        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
-    elif external_label and not custom_legend:
-        # Use custom names for external legend
-        unique_files = []
-        for config in valid_configs:
-            for filename in config['files']:
-                if filename not in unique_files:
-                    unique_files.append(filename)
-        labels = [custom_names.get(f, f) for f in unique_files]
-        fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+        if len(used_ylabels) == 1:
+            subplot_ylabel = next(iter(used_ylabels))
+        else:
+            subplot_ylabel = "Signal"
+            any_subplot_mixed = True
+            if used:  # warn only if there are traces
+                details = ", ".join(sorted(used_ylabels))
+                st.warning(f"Plot {i+1}: mixed units detected ({details}). Using generic 'Signal' y-label.")
 
+        subplot_ylabels.append(subplot_ylabel)
+
+    # --- Axes labels: common vs per-axis ---
     if not supaxes_enabled:
-        for ax in axs:
+        # Per subplot labels
+        for i, ax in enumerate(axs[:len(valid_configs)]):
             ax.set_xlabel("Time (min)")
-            ax.set_ylabel(ylabel)
-    elif supaxes_enabled:
-        fig.text(0.5, 0.04, "Time (min)", ha='center', va='center')
-        fig.text(0.06, 0.5, ylabel, ha='center', va='center', rotation='vertical')
+            ax.set_ylabel(subplot_ylabels[i])
+    else:
+        # Common x and y labels for the whole figure
+        fig.supxlabel("Time (min)")
+
+        # Gather ALL used ylabels across the figure
+        all_used_files = []
+        for config in valid_configs:
+            all_used_files.extend([f for f in config['files'] if f in data_dict])
+        all_used_labels = { ylabels_per_sample.get(f, "Signal") for f in all_used_files }
+
+        if len(all_used_labels) == 1:
+            common_ylabel = next(iter(all_used_labels))
+        else:
+            common_ylabel = "Signal"
+            any_subplot_mixed = True
+            if all_used_files:
+                details = ", ".join(sorted(all_used_labels))
+                st.warning(f"Common axes: mixed units detected across subplots ({details}). Using generic 'Signal' y-label.")
+        fig.supylabel(common_ylabel)
+
+    # --- Suptitle handling ---
+    if suptitle_enabled:
+        if any_subplot_mixed:
+            fig.suptitle("Signal", fontsize=16)
+            st.warning("Suptitle set to 'Signal' because mixed units were detected.")
+        else:
+            if suptitle:
+                fig.suptitle(suptitle, fontsize=16)
 
     plt.tight_layout()
     return fig
 
-def process_txt_file(uploaded_file):
-    """Process a Chromelion exported .txt file."""
-    if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
-        return None, None, "File size exceeds 200MB limit."
-   
+def _extract_unit_from_token(token: str) -> str | None:
+    """
+    Extract a unit from a token like 'Signal (pA)' or 'pA'.
+    Returns 'pA', 'mAU', etc., or None if not found.
+    """
+    if token is None:
+        return None
+    token = str(token).strip()
+
+    # Prefer content inside parentheses
+    m = re.search(r"\(([^)]+)\)", token)
+    if m:
+        return m.group(1).strip()
+
+    # Otherwise, use the token itself if it's not just 'Signal' or 'Time'
+    cleaned = re.sub(r"(?i)\b(signal|time)\b", "", token).strip()
+    if cleaned:
+        return cleaned
+    return None
+
+def _unit_from_ylabel(ylabel: str) -> str | None:
+    """
+    Given 'Signal (pA)' -> 'pA', 'Signal (mAU)' -> 'mAU', or None if missing.
+    """
+    return _extract_unit_from_token(ylabel)
+
+
+def process_txt_file(uploaded_file, header_row_index: int = 42):
+    """
+    Process a Chromeleon exported .txt file and derive ylabel from the unit row.
+    
+    Returns:
+        df_subset (pd.DataFrame): 2 columns [Time, Signal]
+        default_name (str|None): default sample name extracted from header (if present)
+        ylabel (str): e.g., 'Signal (pA)' or 'Signal (mAU)'
+        error (str|None): error message if any, else None
+    """
+    # 200MB limit
+    if uploaded_file.size > 200 * 1024 * 1024:
+        return None, None, None, "File size exceeds 200MB limit."
+    
     try:
-        # Read the first few lines to extract the default name
-        lines = []
-        for i, line in enumerate(uploaded_file):
-            if i < 7:  # Read enough lines to get to the 6th line
-                lines.append(line.decode('utf-8'))
-            else:
-                break
-       
-        # Reset file pointer
-        uploaded_file.seek(0)
-       
-        # Extract default name from 6th line, 2nd column (if available)
+        # Read full file content once (so we can inspect header lines)
+        raw_bytes = uploaded_file.read()
+        text = raw_bytes.decode('utf-8', errors='ignore')
+        lines = text.splitlines()
+
+        # Extract default name from 6th line if available and starts with "Injection"
         default_name = None
         if len(lines) >= 6:
             sixth_line_parts = lines[5].strip().split('\t')
             if len(sixth_line_parts) >= 2 and sixth_line_parts[0].strip() == "Injection":
-                default_name = sixth_line_parts[-1].strip() # take last column as name
+                default_name = sixth_line_parts[-1].strip()
 
-        # Read the file into a DataFrame    
-        df = pd.read_csv(uploaded_file, sep='\t', header=42, thousands=',', engine='python')
+        # Reset pointer for pandas to read
+        uploaded_file.seek(0)
+
+        # Read the data, using the known header row
+        df = pd.read_csv(
+            uploaded_file, sep='\t', header=header_row_index,
+            thousands=',', engine='python'
+        )
         if len(df.columns) != 3:
-            return None, None, "File should have exactly 3 columns."
-       
-        return df.iloc[:, [0, 2]], default_name, None  # Return 1st and 3rd columns
+            return None, None, None, "File should have exactly 3 columns."
+        
+        # Try to get unit from the 3rd column header first
+        third_header = str(df.columns[2])
+        unit = _extract_unit_from_token(third_header)
+
+        # If that didn't yield a unit, try the units row:
+        # The units row is the row immediately BELOW the header (i.e., above the data)
+        if unit is None:
+            units_row_idx = header_row_index + 1
+            if len(lines) > units_row_idx:
+                units_row = lines[units_row_idx].strip().split('\t')
+                if len(units_row) >= 3:
+                    unit = _extract_unit_from_token(units_row[2])
+
+        ylabel = f"Signal ({unit})" if unit else "Signal"
+
+        # Keep only the first and third columns (Time and Signal)
+        df_subset = df.iloc[:, [0, 2]]
+
+        return df_subset, default_name, ylabel, None
+
     except Exception as e:
-        return None, None, f"Error processing file: {str(e)}\nPlease ensure the file is a valid Chromelion exported .txt file."
+        return None, None, None, (
+            f"Error processing file: {str(e)}\n"
+            "Please ensure the file is a valid Chromeleon exported .txt file."
+        )
+
 
 def process_csv_file(uploaded_file):
-    """Process a CSV file exported from this app."""
-    if uploaded_file.size > 200 * 1024 * 1024:  # 200MB limit
-        return None, None, None, "File size exceeds 200MB limit."
+    """
+    Process a CSV file exported from this app. It supports multiple units
+    for the signal (e.g., 'pA - Sample', 'mAU - Sample') and returns a ylabel
+    for each sample.
+
+    Returns:
+        data_dict (dict[str, pd.Series]): sample -> y-values
+        x_data_dict (dict[str, pd.Series]): sample -> time values
+        custom_names (dict[str, str]): sample -> display name
+        ylabels (dict[str, str]): sample -> ylabel (e.g., 'Signal (pA)')
+        error (str|None)
+    """
+    # 200MB limit
+    if uploaded_file.size > 200 * 1024 * 1024:
+        return None, None, None, None, "File size exceeds 200MB limit."
+
     try:
         df = pd.read_csv(uploaded_file)
         data_dict = {}
         x_data_dict = {}
         custom_names = {}
-        
+        ylabels = {}
+
         for column in df.columns:
-            if column.startswith("Time - "):
-                sample_name = column[7:]  # Remove "Time - " prefix
+            col = str(column)
+
+            # Time columns: "Time - Sample"
+            if col.startswith("Time - "):
+                sample_name = col.split(" - ", 1)[1].strip()
                 x_data_dict[sample_name] = df[column]
-            elif column.startswith("pA - "):
-                sample_name = column[5:]  # Remove "pA - " prefix
+                continue
+
+            # Signal columns: "{UNIT} - Sample" (e.g., "pA - Sample", "mAU - Sample")
+            m = re.match(r"^\s*([^\-]+?)\s*-\s*(.+)\s*$", col)
+            if m:
+                prefix = m.group(1).strip()
+                sample_name = m.group(2).strip()
+
+                # Ignore the Time prefix (handled above)
+                if prefix.lower().startswith("time"):
+                    continue
+
+                # Treat the prefix as unit (e.g., pA, mAU)
+                unit = _extract_unit_from_token(prefix) or prefix
+
                 data_dict[sample_name] = df[column]
                 custom_names[sample_name] = sample_name
-        
-        return data_dict, x_data_dict, custom_names, None
+                ylabels[sample_name] = f"Signal ({unit})"
+                continue
+
+        return data_dict, x_data_dict, custom_names, ylabels, None
+
     except Exception as e:
-        return None, None, None, f"Error processing CSV file: {str(e)}"
+        return None, None, None, None, f"Error processing CSV file: {str(e)}"
 
-def get_csv_download_data(data_dict, custom_names, x_data_dict):
-    """Prepare CSV data for download."""
+def get_csv_download_data(data_dict, custom_names, x_data_dict, ylabels):
+    """Prepare CSV data for download using each sample's unit."""
     output = io.BytesIO()
-    new_df = pd.DataFrame() 
+    new_df = pd.DataFrame()
 
-    for col in data_dict:
-        new_df[f"Time - {custom_names.get(col, col)}"] = x_data_dict[col]
-        new_df[f"pA - {custom_names.get(col, col)}"] = data_dict[col]
+    for sample in data_dict:
+        disp = custom_names.get(sample, sample)
+        # Prefer the unit from stored ylabel like 'Signal (pA)' -> 'pA'
+        unit = _unit_from_ylabel(ylabels.get(sample, "")) or "Signal"
+
+        new_df[f"Time - {disp}"] = x_data_dict[sample]
+        new_df[f"{unit} - {disp}"] = data_dict[sample]
 
     new_df.to_csv(output, index=False)
     output.seek(0)
@@ -180,6 +327,8 @@ if 'plot_configs' not in st.session_state:
     st.session_state.plot_configs = []  # List of dicts, each dict contains 'files' and 'title'
 if 'csv_file_entries' not in st.session_state:
     st.session_state.csv_file_entries = {}
+if 'ylabels' not in st.session_state:
+    st.session_state.ylabels = {}  # sample -> 'Signal (pA)' / 'Signal (mAU)' etc.
     
 
 # Page navigation functions
@@ -210,7 +359,7 @@ if st.session_state.current_page == 'data_upload':
     # PAGE 1: DATA UPLOAD
     st.header("Data Upload")
     st.markdown("""
-    Please upload one or more chromatogram files exported from Chromelion in .txt format.
+    Please upload one or more chromatogram files exported from Chromeleon in .txt format.
     You can also upload preexisting CSV files exported from this app to continue working on it or to add new data into it.
     """)
 
@@ -259,6 +408,7 @@ if st.session_state.current_page == 'data_upload':
                 st.session_state.data_dict.pop(entry_key, None)
                 st.session_state.x_data_dict.pop(entry_key, None)
                 st.session_state.custom_names.pop(entry_key, None)
+                st.session_state.ylabels.pop(entry_key, None)
         
         # Process uploaded CSV files
         progress_bar_csv = st.progress(0)
@@ -267,7 +417,7 @@ if st.session_state.current_page == 'data_upload':
             if uploaded_csv.name not in st.session_state.csv_file_entries:
                 st.session_state.csv_file_entries[uploaded_csv.name] = []
                 
-            data_dict_csv, x_data_dict_csv, custom_names_csv, error = process_csv_file(uploaded_csv)
+            data_dict_csv, x_data_dict_csv, custom_names_csv, ylabels_csv, error = process_csv_file(uploaded_csv)
             if error:
                 st.error(f"Error in CSV file {uploaded_csv.name}: {error}")
             else:
@@ -278,6 +428,7 @@ if st.session_state.current_page == 'data_upload':
                     st.session_state.data_dict.pop(entry, None)
                     st.session_state.x_data_dict.pop(entry, None)
                     st.session_state.custom_names.pop(entry, None)
+                    st.session_state.ylabels.pop(entry, None)
                 
                 st.session_state.csv_file_entries[uploaded_csv.name] = []
                 
@@ -296,6 +447,7 @@ if st.session_state.current_page == 'data_upload':
                     st.session_state.data_dict[entry_key] = entry_value
                     st.session_state.x_data_dict[entry_key] = x_data_dict_csv[entry_key]
                     st.session_state.custom_names[entry_key] = current_custom_name
+                    st.session_state.ylabels[entry_key] = ylabels_csv.get(entry_key, "Signal")
                     
                     if not duplicate_exists:
                         new_csv_files_count += 1
@@ -304,7 +456,7 @@ if st.session_state.current_page == 'data_upload':
             progress_bar_csv.progress((idx + 1) / len(uploaded_csv_files))
 
     # 2. TXT FILE UPLOAD SECTION
-    st.subheader("Upload Chromelion Files")
+    st.subheader("Upload Chromeleon Files")
     if "txt_uploader_key" not in st.session_state:
         st.session_state["txt_uploader_key"] = 0
     uploaded_txt_files = st.file_uploader("Upload your .txt files", 
@@ -338,6 +490,7 @@ if st.session_state.current_page == 'data_upload':
                     st.session_state.data_dict.pop(filename, None)
                     st.session_state.x_data_dict.pop(filename, None)
                     st.session_state.custom_names.pop(filename, None)
+                    st.session_state.ylabels.pop(filename, None)
                 else:   
                     st.text(f"Keeping data for {filename} as it exists in CSV entries")
 
@@ -345,7 +498,7 @@ if st.session_state.current_page == 'data_upload':
 
         # Process new TXT files
         for idx, file in enumerate(uploaded_txt_files):
-            df, default_name, error = process_txt_file(file)
+            df, default_name, ylabel, error = process_txt_file(file)
             if error:
                 st.error(f"Error in file {file.name}: {error}")
             else:
@@ -358,6 +511,8 @@ if st.session_state.current_page == 'data_upload':
                 st.session_state.x_data_dict[file.name] = df.iloc[:, 0]
                 st.session_state.data_dict[file.name] = df.iloc[:, 1]
                 default_names[file.name] = default_name or file.name
+
+                st.session_state.ylabels[file.name] = ylabel or "Signal"
 
                 if file.name not in st.session_state.custom_names:
                     st.session_state.custom_names[file.name] = default_name or file.name
@@ -377,6 +532,7 @@ if st.session_state.current_page == 'data_upload':
         st.session_state.custom_names = {}
         st.session_state.csv_file_entries = {}
         st.session_state.txt_file_entries = {}
+        st.session_state.ylabels = {}
         st.rerun()
         st.success("All uploaded data cleared.")
 
@@ -524,19 +680,21 @@ elif st.session_state.current_page == 'visualization':
                     log_y = st.toggle("Enable logarithmic y-axis", value=False)
 
             # Generate the plot
+            
             fig = generate_plots(
                 data_dict,
-                custom_names, 
-                x_data_dict, 
+                custom_names,
+                x_data_dict,
                 st.session_state.plot_configs,
-                ylabel='Signal (pA)', 
-                external_label=external_label, 
+                ylabels_per_sample=st.session_state.ylabels,   
+                external_label=external_label,
                 custom_legend=custom_legend,
                 suptitle_enabled=suptitle_enabled,
                 suptitle=suptitle,
                 supaxes_enabled=supaxes_enabled,
                 log_y=log_y
             )
+
             
             if fig:
                     st.pyplot(fig)#, width="content")
@@ -582,7 +740,7 @@ elif st.session_state.current_page == 'visualization':
                         )
                     
                     with col4:
-                        csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
+                        csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict, st.session_state.ylabels)
                         st.download_button(
                             label="Data (CSV)",
                             data=csv_data,
@@ -599,7 +757,7 @@ elif st.session_state.current_page == 'visualization':
                 st.subheader("Download Options")
                 col1, col2, col3, col4 = st.columns(4)
                 with col4:
-                    csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
+                    csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict, st.session_state.ylabels)
                     st.download_button(
                         label="Data (CSV)",
                         data=csv_data,
@@ -613,7 +771,7 @@ elif st.session_state.current_page == 'visualization':
             st.subheader("Download Options")
             col1, col2, col3, col4 = st.columns(4)
             with col4:
-                csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict)
+                csv_data = get_csv_download_data(data_dict, custom_names, x_data_dict, st.session_state.ylabels)
                 st.download_button(
                     label="Data (CSV)",
                     data=csv_data,
