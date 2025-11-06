@@ -79,8 +79,8 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, e
             ax.set_xlabel("Time (min)")
             ax.set_ylabel(ylabel)
     elif supaxes_enabled:
-        fig.text(0.5, 0.04, "Time (min)", ha='center', va='center')
-        fig.text(0.06, 0.5, ylabel, ha='center', va='center', rotation='vertical')
+        fig.supxlabel("Time (min)")
+        fig.supylabel(ylabel)
 
     plt.tight_layout()
     return fig
