@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 ### Function definitions ###
 
-def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_label=False, custom_legend=None,
-                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False):
+def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, external_label=False, custom_legend=None,
+                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False,):
     """Generate matplotlib plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
@@ -73,6 +73,14 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, external_
                     unique_files.append(filename)
         labels = [custom_names.get(f, f) for f in unique_files]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+    if not supaxes_enabled:
+        for ax in axs:
+            ax.set_xlabel("Time (min)")
+            ax.set_ylabel(ylabel)
+    elif supaxes_enabled:
+        fig.text(0.5, 0.04, "Time (min)", ha='center', va='center')
+        fig.text(0.06, 0.5, ylabel, ha='center', va='center', rotation='vertical')
 
     plt.tight_layout()
     return fig
@@ -520,7 +528,8 @@ elif st.session_state.current_page == 'visualization':
                 data_dict,
                 custom_names, 
                 x_data_dict, 
-                st.session_state.plot_configs, 
+                st.session_state.plot_configs,
+                ylabel='Signal (pA)', 
                 external_label=external_label, 
                 custom_legend=custom_legend,
                 suptitle_enabled=suptitle_enabled,
