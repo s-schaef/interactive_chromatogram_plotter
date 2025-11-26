@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 ### Function definitions ###
 
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, external_label=False, custom_legend=None,
-                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False,):
+                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False, custom_xlim=None):
     """Generate matplotlib plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
@@ -73,6 +73,9 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, e
                     unique_files.append(filename)
         labels = [custom_names.get(f, f) for f in unique_files]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
+    if custom_xlim:
+        for ax in axs:
+            ax.set_xlim(custom_xlim)
 
     if not supaxes_enabled:
         for ax in axs:
@@ -511,6 +514,11 @@ elif st.session_state.current_page == 'visualization':
                         suptitle = ""
                     
                     supaxes_enabled = st.toggle("Enable common axis labels", value=False)
+                    custom_xlim = st.checkbox("Custom x-axis limits")
+                    if custom_xlim:
+                        x_min = st.number_input("X-axis min", value=0.0, step=0.1)
+                        x_max = st.number_input("X-axis max", value=20, step=0.1)
+                        custom_xlim = (x_min, x_max)
                 
                 with col2:
                     external_label = st.toggle("Enable external legend")
@@ -535,7 +543,8 @@ elif st.session_state.current_page == 'visualization':
                 suptitle_enabled=suptitle_enabled,
                 suptitle=suptitle,
                 supaxes_enabled=supaxes_enabled,
-                log_y=log_y
+                log_y=log_y,
+                custom_xlim=custom_xlim,
             )
             
             if fig:
