@@ -502,7 +502,6 @@ elif st.session_state.current_page == 'visualization':
             # Generate and display plots
             # if any(config.get('files') for config in st.session_state.plot_configs):
             st.subheader("Generated Plots")
-            
             # Plot options
             with st.expander("⚙️ Plot Options", expanded=False):
                 col1, col2 = st.columns(2)
@@ -514,10 +513,11 @@ elif st.session_state.current_page == 'visualization':
                         suptitle = ""
                     
                     supaxes_enabled = st.toggle("Enable common axis labels", value=False)
-                    custom_xlim = st.checkbox("Custom x-axis limits")
+                    custom_xlim = st.toggle("Custom x-axis limits", value=False)
                     if custom_xlim:
                         x_min = st.number_input("X-axis min", value=0.0, step=0.1)
-                        x_max = st.number_input("X-axis max", value=20, step=0.1)
+                        x_max_value = max([v.max() for v in x_data_dict.values()])
+                        x_max = st.number_input("X-axis max", value=float(x_max_value), step=0.1)
                         custom_xlim = (x_min, x_max)
                 
                 with col2:
