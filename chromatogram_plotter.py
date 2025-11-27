@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 ### Function definitions ###
 
 def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, external_label=False, custom_legend=None,
-                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False, custom_xlim=None):
+                   suptitle_enabled=True, suptitle="Formulation", supaxes_enabled=False, log_y=False, custom_xlim=None, custom_ylim=None):
     """Generate matplotlib plots based on configuration."""
     # Filter out empty plot configs
     valid_configs = [config for config in plot_configs if config.get('files')]
@@ -73,9 +73,15 @@ def generate_plots(data_dict, custom_names, x_data_dict, plot_configs, ylabel, e
                     unique_files.append(filename)
         labels = [custom_names.get(f, f) for f in unique_files]
         fig.legend(labels, loc='center left', bbox_to_anchor=(1.0, 0.5))
-    if custom_xlim:
+    if custom_xlim or custom_ylim:
         for ax in axs:
             ax.set_xlim(custom_xlim)
+            ax.set_ylim(custom_ylim)
+    # if custom_ylim:
+    #     for ax in axs:
+    #         ax.set_ylim(custom_ylim)
+
+    
 
     if not supaxes_enabled:
         for ax in axs:
@@ -519,6 +525,7 @@ elif st.session_state.current_page == 'visualization':
                         x_max_value = max([v.max() for v in x_data_dict.values()])
                         x_max = st.number_input("X-axis max", value=float(x_max_value), step=0.1)
                         custom_xlim = (x_min, x_max)
+
                 
                 with col2:
                     external_label = st.toggle("Enable external legend")
@@ -530,6 +537,13 @@ elif st.session_state.current_page == 'visualization':
                             help="Leave empty to use sample names."
                         )
                     log_y = st.toggle("Enable logarithmic y-axis", value=False)
+                    
+                    custom_ylim = st.toggle("Custom y-axis limits", value=False)
+                    if custom_ylim:
+                        y_min = st.number_input("Y-axis min", value=0.0, step=0.1)
+                        y_max_value = max([v.max() for v in data_dict.values()])
+                        y_max = st.number_input("Y-axis max", value=float(y_max_value), step=0.1)
+                        custom_ylim = (y_min, y_max)
 
             # Generate the plot
             fig = generate_plots(
@@ -545,6 +559,7 @@ elif st.session_state.current_page == 'visualization':
                 supaxes_enabled=supaxes_enabled,
                 log_y=log_y,
                 custom_xlim=custom_xlim,
+                custom_ylim=custom_ylim,
             )
             
             if fig:
